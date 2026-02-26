@@ -7,7 +7,7 @@ authors = [
 ]
 license = {text = "Apache2.0"}
 readme = "README.md"
-requires-python = ">=3.14,<3.15"
+requires-python = ">=3.12,<=3.14"
 dependencies = [
 	"fastapi>=0.115.0",
 	"uvicorn[standard]>=0.30.0",
@@ -37,6 +37,9 @@ dependencies = [
 	"tenacity>=9.0.0"
 ]
 
+packages = [
+    { include = "swingtraderai" }
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
