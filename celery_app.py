@@ -1,5 +1,6 @@
 from celery import Celery
-from swingtraderai.core.config import DATABASE_URL, REDIS_URL
+
+from swingtraderai.core.config import REDIS_URL
 
 celery = Celery(
 	"swingtraderai",
