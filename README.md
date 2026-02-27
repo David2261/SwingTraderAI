@@ -74,6 +74,7 @@ source .venv/bin/activate
 ```env
 # Database
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ta_db
+# To run in Docker, use postgres instead of localhost.
 
 # Telegram
 TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN
