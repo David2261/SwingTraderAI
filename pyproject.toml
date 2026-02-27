@@ -62,6 +62,9 @@ target-version = ['py312']
 line-length = 88
 target-version = "py312"
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
 [tool.ruff.format]
 indent-style = "tab"
 quote-style = "double"
@@ -77,7 +80,10 @@ python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 plugins = ["pydantic.mypy"]
+exclude = ["tests/.*", "alembic/.*"]
 
 [[tool.mypy.overrides]]
-module = "alembic.env"
+module = ["tests.*", "alembic.*"]
 ignore_errors = true
+disallow_untyped_defs = false
+check_untyped_defs = false

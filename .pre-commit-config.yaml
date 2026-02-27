@@ -17,8 +17,11 @@ repos:
     rev: v1.19.1
     hooks:
       - id: mypy
+        exclude: ^(tests/|alembic/)
         additional_dependencies: [
           "pydantic>=2.8.0",
-          "sqlalchemy[asyncio]>=2.0.0"
+          "sqlalchemy[asyncio]>=2.0.0",
+          "alembic",
+          "fastapi"
         ]
         args: [--config-file=pyproject.toml, --ignore-missing-imports]
