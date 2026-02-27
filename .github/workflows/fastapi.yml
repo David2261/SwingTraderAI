@@ -46,4 +46,4 @@ jobs:
         run: poetry run mypy .
 
       - name: Run tests
-        run: poetry run pytest --suppress-no-test-exit-code
+        run: poetry run pytest
