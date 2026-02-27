@@ -48,7 +48,9 @@ async def run_migrations_online() -> None:
 	section = config.get_section(config.config_ini_section)
 
 	if section is None:
-		raise RuntimeError(f"Section {config.config_ini_section} not found in alembic.ini")
+		raise RuntimeError(
+			f"Section {config.config_ini_section} not found in alembic.ini"
+		)
 
 	connectable = async_engine_from_config(
 		section,
