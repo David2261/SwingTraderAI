@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Float, ForeignKey, Index, String, Text
+from sqlalchemy import TIMESTAMP, Boolean, Float, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, NUMERIC, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,7 +20,9 @@ class Ticker(Base):
 	base_currency: Mapped[str | None] = mapped_column(String(10))
 	quote_currency: Mapped[str | None] = mapped_column(String(10))
 	is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 
 class MarketData(Base):
@@ -33,13 +35,17 @@ class MarketData(Base):
 		UUID(as_uuid=True), ForeignKey("tickers.id")
 	)
 	timeframe: Mapped[str | None] = mapped_column(String(10))
-	timestamp: Mapped[datetime | None]
+	timestamp: Mapped[datetime | None] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 	open: Mapped[float | None] = mapped_column(NUMERIC)
 	high: Mapped[float | None] = mapped_column(NUMERIC)
 	low: Mapped[float | None] = mapped_column(NUMERIC)
 	close: Mapped[float | None] = mapped_column(NUMERIC)
 	volume: Mapped[float | None] = mapped_column(NUMERIC)
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 	ticker = relationship("Ticker")
 
@@ -62,7 +68,9 @@ class Analysis(Base):
 	summary: Mapped[str | None] = mapped_column(Text)
 	raw_llm_output = mapped_column(JSONB)
 	indicators = mapped_column(JSONB)
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 	__table_args__ = (Index("idx_analyses", "ticker_id", "created_at"),)
 
@@ -86,7 +94,9 @@ class Signal(Base):
 	take_profit: Mapped[float | None] = mapped_column(NUMERIC)
 	status: Mapped[str | None] = mapped_column(String(15))
 	reason: Mapped[str | None] = mapped_column(Text)
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 	__table_args__ = (
 		Index("idx_signals_ticker", "ticker_id", "created_at"),
@@ -106,7 +116,9 @@ class Notification(Base):
 	channel: Mapped[str | None] = mapped_column(String(20))
 	sent_to: Mapped[str | None] = mapped_column(String(100))
 	status: Mapped[str | None] = mapped_column(String(15))
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 
 class Watchlist(Base):
@@ -117,7 +129,9 @@ class Watchlist(Base):
 	)
 	name: Mapped[str | None] = mapped_column(String(50))
 	owner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-	created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 
 class WatchlistItem(Base):

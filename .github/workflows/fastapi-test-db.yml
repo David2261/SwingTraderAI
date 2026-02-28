@@ -1,0 +1,54 @@
+name: FastAPI Tests with PostgreSQL 18
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST_DATABASE_URL }}
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U admiralgeneral"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Set environment variables
+        run: |
+          echo "DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Run database migrations
+        run: |
+          alembic upgrade head
+
+      - name: Run tests
+        run: poetry run pytest --asyncio-mode=auto --tb=short -q
