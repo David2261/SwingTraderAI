@@ -9,20 +9,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     env:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_USER: admiralgeneral
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      POSTGRES_DB: swingtraderai_test
+      DATABASE_URL: >-
+        postgresql+asyncpg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@127.0.0.1:5433/${{ env.POSTGRES_DB }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
       CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
       CELERY_RESULT_BACKEND: ${{ secrets.CELERY_RESULT_BACKEND }}
+
     services:
       postgres:
         image: postgres:18
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
         ports:
           - 5433:5432
         options: >-
@@ -46,16 +50,11 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Set environment variables
-        run: |
-          echo "DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}" >> $GITHUB_ENV
-
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
       - name: Run database migrations
-        run: |
-          poetry run alembic upgrade head
+        run: poetry run alembic upgrade head
 
       - name: Run tests
         run: poetry run pytest --asyncio-mode=auto --tb=short -q
