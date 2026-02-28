@@ -1,4 +1,4 @@
-name: FastAPI Tests with PostgreSQL 18
+name: FastAPI Tests
 
 on:
   pull_request:
@@ -48,7 +48,7 @@ jobs:
 
       - name: Run database migrations
         run: |
-          alembic upgrade head
+          poetry run alembic upgrade head
 
       - name: Run tests
         run: poetry run pytest --asyncio-mode=auto --tb=short -q
