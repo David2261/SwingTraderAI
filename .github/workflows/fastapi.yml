@@ -3,8 +3,20 @@ name: FastAPI CI/CD
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+      - '.github/workflows/**'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+      - '.github/workflows/**'
 
 jobs:
   lint-and-test:
