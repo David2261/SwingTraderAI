@@ -20,8 +20,19 @@ repos:
         exclude: ^(tests/|alembic/)
         additional_dependencies: [
           "pydantic>=2.8.0",
+          "pydantic-settings>=2.5.0",
           "sqlalchemy[asyncio]>=2.0.0",
           "alembic",
-          "fastapi"
+          "fastapi",
+          "types-redis",
+          "types-python-jose",
+          "types-passlib",
+          "types-python-dateutil",
+          "types-requests",
         ]
-        args: [--config-file=pyproject.toml, --ignore-missing-imports]
+        args: [
+          --config-file=pyproject.toml,
+          "--no-warn-unused-ignores",
+          --ignore-missing-imports,
+          "--follow-imports=silent",
+        ]

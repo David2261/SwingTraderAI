@@ -1,15 +1,17 @@
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class Settings(BaseSettings):
+	model_config = SettingsConfigDict(
+		env_file=".env", env_ignore_empty=True, extra="ignore"
+	)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+	SECRET_KEY: str
+	ALGORITHM: str
+	DATABASE_URL: str
+	REDIS_URL: str
+	ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+	REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-if DATABASE_URL is None:
-	raise ValueError("DATABASE_URL is not set in environment variables")
 
-REDIS_URL = os.getenv("REDIS_URL")
-
-if REDIS_URL is None:
-	raise ValueError("REDIS_URL is not set in environment variables")
+settings = Settings()

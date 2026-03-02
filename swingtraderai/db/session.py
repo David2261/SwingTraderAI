@@ -7,16 +7,26 @@ from sqlalchemy.ext.asyncio import (
 	create_async_engine,
 )
 
-from swingtraderai.core.config import DATABASE_URL
+from swingtraderai.core.config import settings
 
-if DATABASE_URL is None:
+if settings.DATABASE_URL is None:
 	raise ValueError("DATABASE_URL is not set in environment variables")
 
-engine: AsyncEngine = create_async_engine(
-	DATABASE_URL,
-	echo=False,
-	future=True,
-)
+
+def create_engine() -> AsyncEngine:
+	return create_async_engine(
+		settings.DATABASE_URL,
+		echo=False,
+		future=True,
+		pool_pre_ping=True,
+		pool_size=5,
+		max_overflow=10,
+		pool_timeout=30,
+	)
+
+
+engine: AsyncEngine = create_engine()
+
 
 AsyncSessionLocal = async_sessionmaker(
 	bind=engine,
@@ -25,6 +35,25 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+	"""
+	FastAPI dependency для получения асинхронной сессии.
+	Использование: db: AsyncSession = Depends(get_db)
+	"""
+	session = AsyncSessionLocal()
+	try:
+		yield session
+	except Exception:
+		await session.rollback()
+		raise
+	finally:
+		await session.close()
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
 	async with AsyncSessionLocal() as session:
 		yield session
+
+
+async def dispose_engine() -> None:
+	await engine.dispose()

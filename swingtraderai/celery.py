@@ -1,11 +1,11 @@
 from celery import Celery
 
-from swingtraderai.core.config import REDIS_URL
+from swingtraderai.core.config import settings
 
 celery = Celery(
 	"swingtraderai",
-	broker=REDIS_URL,
-	backend=REDIS_URL,
+	broker=settings.REDIS_URL,
+	backend=settings.REDIS_URL,
 	include=[
 		"swingtraderai.tasks",
 	],

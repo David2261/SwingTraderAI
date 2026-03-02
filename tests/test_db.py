@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swingtraderai.db.models import (
+from swingtraderai.db.models.ticker import (
 	Analysis,
 	MarketData,
 	Notification,

@@ -16,7 +16,7 @@ dependencies = [
 	"asyncpg>=0.29.0",
 	"alembic>=1.13.0",
 
-	"pydantic>=2.8.0",
+	"pydantic[email] (>=2.12.5,<3.0.0)",
 	"pydantic-settings>=2.5.0",
 
 	"aiogram>=3.13.0",
@@ -37,6 +37,11 @@ dependencies = [
 	"tenacity>=9.0.0",
 	"celery (>=5.6.2,<6.0.0)",
 	"redis (>=7.2.1,<8.0.0)",
+	"passlib (>=1.7.4,<2.0.0)",
+	"python-jose (>=3.5.0,<4.0.0)",
+	"cryptography (>=46.0.5,<47.0.0)",
+	"python-multipart (>=0.0.22,<0.0.23)",
+	"bcrypt (==4.2.1)",
 ]
 
 packages = [
@@ -75,6 +80,7 @@ quote-style = "double"
 select = ["E", "F", "I", "B", "C4"]
 ignore = [
 	"W191",
+	"B008",
 ]
 
 [tool.mypy]
@@ -83,6 +89,12 @@ strict = true
 ignore_missing_imports = true
 plugins = ["pydantic.mypy"]
 exclude = ["tests/.*", "alembic/.*"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
 
 [[tool.mypy.overrides]]
 module = ["tests.*", "alembic.*"]
@@ -118,6 +130,7 @@ markers = [
 
 filterwarnings = [
 	"ignore::DeprecationWarning:sqlalchemy",
+	"ignore:'crypt' is deprecated:DeprecationWarning",
 ]
 
 norecursedirs = [

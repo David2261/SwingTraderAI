@@ -62,3 +62,15 @@ async def client(db_session):
 		yield ac
 
 	app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session")
+async def check_db_connection():
+	if not TEST_DATABASE_URL:
+		pytest.skip("TEST_DATABASE_URL not set")
+	engine = create_async_engine(TEST_DATABASE_URL)
+	try:
+		async with engine.connect() as conn:
+			await conn.execute("SELECT 1")
+	finally:
+		await engine.dispose()

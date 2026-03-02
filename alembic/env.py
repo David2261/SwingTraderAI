@@ -7,10 +7,13 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from swingtraderai.core.config import DATABASE_URL as db_url
+from swingtraderai.core.config import settings
 from swingtraderai.db.base import Base
 
 config = context.config
+
+db_url = settings.DATABASE_URL
+
 if db_url:
 	if "postgresql://" in db_url and "+asyncpg" not in db_url:
 		db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
