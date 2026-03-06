@@ -85,7 +85,7 @@ alembic upgrade head
 
 4. **Run**
 ```bash
-uvicorn swingtraderai.main:swingtraderai --reload
+uvicorn swingtraderai.main:app --reload
 
 python -m bots.telegram.bot
 

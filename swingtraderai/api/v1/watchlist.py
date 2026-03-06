@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -9,7 +9,7 @@ from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.watchlist import WatchlistItemCreate, WatchlistItemOut
 
-router = APIRouter(prefix="/watchlist", tags=["watchlist"])
+router = APIRouter(prefix="/users/me/watchlist", tags=["watchlist"])
 
 
 @router.post("/items", response_model=WatchlistItemOut, status_code=201)
@@ -64,23 +64,31 @@ async def get_my_watchlist(
 		.join(Watchlist)
 		.where(Watchlist.owner_id == current_user.id)
 		.options(joinedload(WatchlistItem.ticker))
+		.order_by(WatchlistItem.created_at.desc())
 	)
 	items = result.scalars().all()
-	return [WatchlistItemOut.from_orm(i) for i in items]
+	return [WatchlistItemOut.model_validate(i) for i in items]
 
 
-@router.delete("/items/{item_id}")
+@router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_from_watchlist(
 	item_id: int,
 	current_user: User = Depends(get_current_user),
 	db: AsyncSession = Depends(get_db),
-) -> dict[str, str]:
-	item = await db.get(WatchlistItem, item_id)
-	if not item or item.watchlist.owner_id != current_user.id:
-		raise HTTPException(
-			status_code=404, detail="Watchlist item not found or not owned"
-		)
+) -> None:
+	stmt = select(WatchlistItem).where(WatchlistItem.id == item_id)
+	result = await db.execute(stmt)
+	item = result.scalar_one_or_none()
+	if not item:
+		raise HTTPException(404, "Item not found")
+
+	stmt_owner = select(Watchlist.owner_id).where(Watchlist.id == item.watchlist_id)
+	owner_result = await db.execute(stmt_owner)
+	owner_id = owner_result.scalar()
+
+	if owner_id != current_user.id:
+		raise HTTPException(403, "Not your watchlist item")
 
 	await db.delete(item)
 	await db.commit()
-	return {"message": "Removed from watchlist"}
+	return None

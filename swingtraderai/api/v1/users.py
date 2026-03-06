@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swingtraderai.api.deps import get_current_active_superuser, get_current_user
+from swingtraderai.api.deps import get_current_user
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.auth import UserOut
@@ -18,7 +18,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)) -> UserO
 async def read_user(
 	user_id: int,
 	db: AsyncSession = Depends(get_db),
-	current_user: User = Depends(get_current_active_superuser),
+	current_user: User = Depends(get_current_user),
 ) -> UserOut:
 	user = await db.get(User, user_id)
 	if not user:

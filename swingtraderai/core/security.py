@@ -13,7 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
 	password_verify = pwd_context.verify(plain_password, hashed_password)
-	return password_verify
+	return bool(password_verify)
 
 
 def get_password_hash(password: str) -> str:
@@ -23,7 +23,7 @@ def get_password_hash(password: str) -> str:
 		warnings.filterwarnings("ignore", message="trapped.*bcrypt version")
 		password_hash = pwd_context.hash(safe_password)
 
-	return password_hash
+	return str(password_hash)
 
 
 def _create_token(subject: str | Any, expires_delta: timedelta, token_type: str) -> str:
@@ -43,7 +43,7 @@ def _create_token(subject: str | Any, expires_delta: timedelta, token_type: str)
 		payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
 	)
 
-	return encoded_token
+	return str(encoded_token)
 
 
 def create_access_token(

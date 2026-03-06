@@ -151,6 +151,9 @@ class WatchlistItem(Base):
 	ticker_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("tickers.id")
 	)
+	created_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+	)
 
 	watchlist: Mapped["Watchlist"] = relationship("Watchlist", back_populates="items")
 	ticker: Mapped["Ticker"] = relationship("Ticker")
