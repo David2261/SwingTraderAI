@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, selectinload
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from swingtraderai.db.models.analysis import Analysis, Signal
 from swingtraderai.db.models.market import Ticker
