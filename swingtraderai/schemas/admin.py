@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class UserRole(str):
@@ -99,6 +99,8 @@ class UserAdminOut(BaseModel):
 	(больше полей, чем обычный UserOut)
 	"""
 
+	model_config = ConfigDict(from_attributes=True)
+
 	id: int
 	username: str
 	email: EmailStr
@@ -112,9 +114,6 @@ class UserAdminOut(BaseModel):
 	updated_at: datetime
 	last_login: Optional[datetime]
 	signals_received_count: int = 0
-
-	class Config:
-		from_attributes = True
 
 
 class UserBanResponse(BaseModel):

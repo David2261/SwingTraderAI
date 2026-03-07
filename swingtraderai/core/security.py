@@ -17,6 +17,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
+	if len(password.encode()) > 72:
+		raise ValueError("Password too long for encryption")
 	safe_password = password[:72]
 
 	with warnings.catch_warnings():
@@ -26,7 +28,7 @@ def get_password_hash(password: str) -> str:
 	return str(password_hash)
 
 
-def _create_token(subject: str | Any, expires_delta: timedelta, token_type: str) -> str:
+def _create_token(subject: str, expires_delta: timedelta, token_type: str) -> str:
 	now = datetime.now(timezone.utc)
 	expire = now + expires_delta
 
@@ -58,3 +60,11 @@ def create_refresh_token(
 ) -> str:
 	expires = expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 	return _create_token(subject, expires, "refresh")
+
+
+def decode_token(token: str) -> dict[str, Any]:
+	return jwt.decode(
+		token,
+		settings.SECRET_KEY,
+		algorithms=[settings.ALGORITHM],
+	)

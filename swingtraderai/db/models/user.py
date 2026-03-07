@@ -1,7 +1,17 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import TIMESTAMP, Boolean, Enum, Index, Integer, String, func, text
+from sqlalchemy import (
+	TIMESTAMP,
+	BigInteger,
+	Boolean,
+	Enum,
+	Index,
+	Integer,
+	String,
+	func,
+	text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from swingtraderai.db.base import Base
@@ -25,8 +35,8 @@ class User(Base):
 		String(255), unique=True, nullable=False, index=True
 	)
 	password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-	telegram_id: Mapped[str | None] = mapped_column(
-		String(50), unique=True, nullable=True, index=True
+	telegram_id: Mapped[BigInteger | None] = mapped_column(
+		BigInteger, unique=True, nullable=True, index=True
 	)
 	telegram_verified: Mapped[bool] = mapped_column(
 		Boolean, default=False, nullable=False
@@ -45,7 +55,6 @@ class User(Base):
 		Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
 		default=UserRole.USER,
 		nullable=False,
-		index=True,
 	)
 	is_superuser: Mapped[bool] = mapped_column(
 		Boolean, default=False, server_default=text("false"), nullable=False

@@ -24,15 +24,6 @@ def test_get_password_hash_generates_different_hashes_for_same_password():
 	assert hash1 != hash2
 
 
-def test_get_password_hash_accepts_up_to_72_chars():
-	"""Пароль длиннее 72 символов обрезается до 72"""
-	long_password = "a" * 100
-	hashed = get_password_hash(long_password)
-	truncated = long_password[:72]
-	assert verify_password(truncated, hashed) is True
-	assert verify_password(long_password, hashed) is True
-
-
 def test_verify_password_correct():
 	password = "testpass123"
 	hashed = get_password_hash(password)
