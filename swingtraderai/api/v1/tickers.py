@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.api.deps import get_current_user
-from swingtraderai.db.models.ticker import Ticker
+from swingtraderai.db.models.market import Ticker
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.ticker import TickerCreate, TickerOut

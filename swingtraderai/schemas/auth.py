@@ -52,3 +52,12 @@ class TokenData(BaseModel):
 	sub: Optional[str] = None
 	type: Literal["access", "refresh"]
 	exp: Optional[int] = None
+
+
+class JWTPayload(BaseModel):
+	sub: str
+	type: str
+	exp: datetime
+	iat: datetime
+	nbf: datetime
+	jti: str

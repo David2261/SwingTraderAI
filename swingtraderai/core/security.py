@@ -7,6 +7,7 @@ from jose import jwt
 from passlib.context import CryptContext
 
 from swingtraderai.core.config import settings
+from swingtraderai.schemas.auth import JWTPayload
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -62,9 +63,10 @@ def create_refresh_token(
 	return _create_token(subject, expires, "refresh")
 
 
-def decode_token(token: str) -> dict[str, Any]:
-	return jwt.decode(
+def decode_token(token: str) -> JWTPayload:
+	payload = jwt.decode(
 		token,
 		settings.SECRET_KEY,
 		algorithms=[settings.ALGORITHM],
 	)
+	return JWTPayload.model_validate(payload)

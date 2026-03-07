@@ -43,7 +43,9 @@ async def engine():
 # Фабрика сессий
 @pytest.fixture
 async def session(engine):
-	async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+	async_session = sessionmaker(
+		engine, class_=AsyncSession, expire_on_commit=False, autoflush=False
+	)
 
 	async with async_session() as session:
 		yield session

@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from swingtraderai.api.deps import get_current_user
-from swingtraderai.db.models.ticker import Ticker, Watchlist, WatchlistItem
+from swingtraderai.db.models.market import Ticker
+from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.watchlist import WatchlistItemCreate, WatchlistItemOut
