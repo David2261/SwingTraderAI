@@ -48,6 +48,12 @@ class MarketData(Base):
 	created_at: Mapped[datetime] = mapped_column(
 		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
 	)
+	source: Mapped[str | None] = mapped_column(String(20), index=True, nullable=True)
+	ingested_at: Mapped[datetime] = mapped_column(
+		TIMESTAMP(timezone=True),
+		default=lambda: datetime.now(timezone.utc),
+		nullable=False,
+	)
 
 	ticker = relationship("Ticker")
 
