@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Literal
 
 import pandas as pd
-import structlog
 from celery import Task, shared_task
 from sqlalchemy import text
 
@@ -14,8 +13,6 @@ from swingtraderai.ingestion.sources.base import BaseSource
 from swingtraderai.ingestion.sources.binance import BinanceSource
 from swingtraderai.ingestion.sources.bybit import BybitSource
 from swingtraderai.ingestion.sources.moex import MoexSource
-
-logger = structlog.get_logger(__name__)
 
 SupportedSource = Literal["moex", "binance", "bybit"]
 
@@ -35,13 +32,6 @@ async def _async_ingest_ohlcv(
 	"""
 	Асинхронная загрузка и сохранение OHLCV-данных с инкрементальной логикой.
 	"""
-	logger.info(
-		"Запуск загрузки OHLCV",
-		symbol=symbol,
-		timeframe=timeframe,
-		source=source_name,
-		lookback_days=lookback_days,
-	)
 
 	async with asynccontextmanager(get_db)() as session:
 		result = await session.execute(
@@ -76,9 +66,6 @@ async def _async_ingest_ohlcv(
 			since=since,
 		)
 	except Exception as e:
-		logger.exception(
-			"Ошибка загрузки данных из источника", source=source_name, exc_info=True
-		)
 		raise e
 
 	if df.empty:
@@ -94,9 +81,8 @@ async def _async_ingest_ohlcv(
 				df=df,
 				source=source_name,
 			)
-		except Exception:
-			logger.exception("Ошибка сохранения данных в базу")
-			raise
+		except Exception as exc:
+			raise exc
 
 	return {
 		"status": "ok",
@@ -134,11 +120,4 @@ def ingest_ohlcv(
 			)
 		)
 	except Exception as exc:
-		logger.exception(
-			"Celery задача ingest_ohlcv упала",
-			symbol=symbol,
-			timeframe=timeframe,
-			source=source,
-			exc_info=True,
-		)
 		raise self.retry(exc=exc) from exc

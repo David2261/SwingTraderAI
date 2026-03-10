@@ -4,15 +4,12 @@ from decimal import Decimal
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
-import structlog
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.db.models.market import MarketData, Ticker
-
-logger = structlog.get_logger(__name__)
 
 
 async def ensure_ticker(
@@ -101,7 +98,7 @@ async def upsert_market_data_batch(
 		if not records:
 			continue
 
-		stmt: Insert = pg_insert(MarketData).values(records)
+		stmt: Insert = pg_insert(MarketData)
 
 		stmt = stmt.on_conflict_do_update(
 			index_elements=["ticker_id", "timeframe", "timestamp"],
@@ -116,20 +113,11 @@ async def upsert_market_data_batch(
 			},
 		)
 
-		result = await session.execute(stmt)
+		result = await session.execute(stmt, records)
 		affected = getattr(result, "rowcount", 0) or 0
 		updated_count += affected
 
 	await session.flush()
 	await session.commit()
-
-	logger.info(
-		"Batch upsert completed",
-		inserted=inserted_count,
-		updated=updated_count,
-		unique_symbols=df["symbol"].nunique(),
-		total_rows=len(df),
-		source=source,
-	)
 
 	return inserted_count, updated_count
