@@ -1,4 +1,5 @@
 from typing import Annotated, Any, Callable, Coroutine
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -9,7 +10,7 @@ from swingtraderai.core.config import settings
 from swingtraderai.db.models.user import User, UserRole
 from swingtraderai.db.session import get_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_current_user(
@@ -33,10 +34,10 @@ async def get_current_user(
 		if user_id_str is None or token_type != "access":
 			raise credentials_exception
 
-		if not user_id_str.isdigit():
-			raise credentials_exception
-
-		user_id = int(user_id_str)
+		try:
+			user_id = UUID(user_id_str)
+		except ValueError as exc:
+			raise credentials_exception from exc
 
 	except JWTError as exc:
 		raise credentials_exception from exc

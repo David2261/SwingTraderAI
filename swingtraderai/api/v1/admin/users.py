@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Dict, List, Optional, Union
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
@@ -52,7 +53,7 @@ async def list_users(
 
 @router.get("/{user_id}", response_model=UserOut)
 async def get_user_detail(
-	user_id: int,
+	user_id: UUID,
 	db: AsyncSession = Depends(get_db),
 ) -> UserOut:
 	"""
@@ -67,10 +68,10 @@ async def get_user_detail(
 
 @router.patch("/{user_id}/status", response_model=dict)
 async def update_user_ban_status(
-	user_id: int,
+	user_id: UUID,
 	data: UserBanAction,
 	db: AsyncSession = Depends(get_db),
-) -> Dict[str, Union[int, str, Optional[datetime], Optional[str], bool]]:
+) -> Dict[str, Union[UUID, str, Optional[datetime], Optional[str], bool]]:
 	user = await db.get(User, user_id)
 	if not user:
 		raise HTTPException(404, "User not found")
@@ -107,30 +108,61 @@ async def update_user_ban_status(
 
 @router.patch("/{user_id}/role", response_model=UserOut)
 async def change_user_role(
-	user_id: int,
+	user_id: UUID,
 	data: UserUpdateRole,
 	current_user: User = Depends(get_current_admin),
 	db: AsyncSession = Depends(get_db),
 ) -> UserOut:
 	"""
-	Изменить роль пользователя (user → admin → tester и т.д.)
+	Изменить роль пользователя с дополнительными проверками
 	"""
 	try:
-		UserRole(data.role)
+		new_role = UserRole(data.role)
 	except ValueError as exc:
 		raise HTTPException(422, "Invalid role") from exc
 
+	stmt = select(User).where(User.id == user_id)
+	result = await db.execute(stmt)
+	target_user = result.scalar_one_or_none()
+
+	if not target_user:
+		raise HTTPException(404, "User not found")
+
+	if new_role == UserRole.ADMIN:
+		raise HTTPException(403, "Cannot assign admin role. Maximum role is support")
+
+	if target_user.role == UserRole.ADMIN:
+		if new_role.value > UserRole.SUPPORT.value:
+			new_role = UserRole.SUPPORT
+	if (
+		target_user.role == UserRole.ADMIN
+		and current_user.role == UserRole.ADMIN
+		and user_id != current_user.id
+	):
+		raise HTTPException(403, "Admin cannot change another admin's role")
+
+	role_values = {
+		UserRole.USER: 1,
+		UserRole.TESTER: 2,
+		UserRole.SUPPORT: 3,
+		UserRole.ADMIN: 4,
+	}
+
 	if (
 		user_id == current_user.id
-		and UserRole(data.role).value < current_user.role.value
+		and role_values[new_role] < role_values[current_user.role]
 	):
 		raise HTTPException(403, "Cannot downgrade own role")
 
-	stmt = update(User).where(User.id == user_id).values(role=data.role).returning(User)
+	update_stmt = (
+		update(User).where(User.id == user_id).values(role=new_role).returning(User)
+	)
 
-	result = await db.execute(stmt)
+	result = await db.execute(update_stmt)
 	updated_user = result.scalar_one_or_none()
 
+	all_users_sorted = await db.execute(select(User).order_by(User.email))
+	_ = all_users_sorted.scalars().all()
 	await db.commit()
 
 	return UserOut.model_validate(updated_user)

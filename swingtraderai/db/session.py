@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
 	async_sessionmaker,
 	create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from swingtraderai.core.config import settings
 
@@ -18,10 +19,7 @@ def create_engine() -> AsyncEngine:
 		settings.DATABASE_URL,
 		echo=False,
 		future=True,
-		pool_pre_ping=True,
-		pool_size=5,
-		max_overflow=10,
-		pool_timeout=30,
+		poolclass=NullPool,
 	)
 
 

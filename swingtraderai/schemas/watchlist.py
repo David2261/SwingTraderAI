@@ -37,3 +37,17 @@ class WatchlistItemCreate(WatchlistItemBase):
 	"""
 
 	pass
+
+
+class WatchlistDataItem(BaseModel):
+	item_id: int
+	ticker_id: UUID
+	symbol: str
+	asset_type: str
+	last_price: Optional[float]
+	change_percent: Optional[float]
+	change_abs: Optional[float]
+	volume: Optional[float]
+	added_at: datetime
+
+	model_config = ConfigDict(from_attributes=True)

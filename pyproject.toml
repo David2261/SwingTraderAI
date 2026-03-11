@@ -43,6 +43,7 @@ dependencies = [
 	"python-multipart (>=0.0.22,<0.0.23)",
 	"bcrypt (==4.2.1)",
 	"moexalgo (>=2.5.9,<3.0.0)",
+	"uuid6 (>=2025.0.1,<2026.0.0)",
 ]
 
 packages = [

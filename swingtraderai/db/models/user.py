@@ -1,20 +1,29 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum as PyEnum
+from uuid import UUID
 
 from sqlalchemy import (
 	TIMESTAMP,
 	BigInteger,
 	Boolean,
+	CheckConstraint,
+	DateTime,
 	Enum,
+	ForeignKey,
 	Index,
 	Integer,
+	Numeric,
 	String,
+	Text,
 	func,
 	text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from uuid6 import uuid7
 
 from swingtraderai.db.base import Base
+from swingtraderai.db.models.market import Ticker
 
 
 class UserRole(str, PyEnum):
@@ -27,7 +36,7 @@ class UserRole(str, PyEnum):
 class User(Base):
 	__tablename__ = "users"
 
-	id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+	id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
 	username: Mapped[str] = mapped_column(
 		String(50), unique=True, nullable=False, index=True
 	)
@@ -93,9 +102,57 @@ class User(Base):
 	last_api_request_at: Mapped[datetime | None] = mapped_column(
 		TIMESTAMP(timezone=True), nullable=True
 	)
+	positions: Mapped[list["Position"]] = relationship(
+		"Position", back_populates="user", cascade="all, delete-orphan"
+	)
 
 	# Индексы для частых запросов
 	__table_args__ = (
 		Index("ix_users_role", "role"),
 		Index("ix_users_is_banned", "is_banned"),
+	)
+
+
+class Position(Base):
+	__tablename__ = "positions"
+
+	id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+	user_id: Mapped[int] = mapped_column(
+		ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+	)
+	ticker_id: Mapped[UUID] = mapped_column(
+		ForeignKey("tickers.id", ondelete="CASCADE"), nullable=False, index=True
+	)
+
+	position_type: Mapped[str] = mapped_column(
+		String(10), nullable=False, server_default="long"
+	)
+
+	quantity: Mapped[Decimal] = mapped_column(
+		Numeric(precision=18, scale=8), nullable=False
+	)
+	average_buy_price: Mapped[Decimal] = mapped_column(
+		Numeric(precision=18, scale=8), nullable=False
+	)
+	total_cost: Mapped[Decimal] = mapped_column(
+		Numeric(precision=18, scale=8), nullable=False
+	)
+
+	opened_at: Mapped[datetime] = mapped_column(
+		DateTime(timezone=True), nullable=False, server_default=func.now()
+	)
+	closed_at: Mapped[datetime | None] = mapped_column(
+		DateTime(timezone=True), nullable=True
+	)
+
+	notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+	user: Mapped[User] = relationship("User", back_populates="positions")
+	ticker: Mapped[Ticker] = relationship("Ticker")
+
+	__table_args__ = (
+		CheckConstraint(
+			"position_type IN ('long', 'short')", name="valid_position_type"
+		),
+		Index("ix_positions_user_ticker_type", "user_id", "ticker_id", "position_type"),
 	)

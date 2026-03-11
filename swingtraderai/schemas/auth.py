@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -7,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class UserBase(BaseModel):
 	username: str = Field(..., min_length=3, max_length=50)
 	email: EmailStr
-	telegram_id: Optional[str] = Field(None, max_length=50)
+	telegram_id: Optional[int] = Field(None)
 
 
 class UserCreate(UserBase):
@@ -17,7 +18,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
 	username: Optional[str] = Field(None, min_length=3, max_length=50)
 	email: Optional[EmailStr] = None
-	telegram_id: Optional[str] = Field(None, max_length=50)
+	telegram_id: Optional[int] = Field(None)
 	password: Optional[str] = Field(None, min_length=8, max_length=128)
 
 	model_config = ConfigDict(extra="forbid")
@@ -29,7 +30,7 @@ class UserPasswordUpdate(BaseModel):
 
 
 class UserOut(UserBase):
-	id: int
+	id: UUID
 	is_active: bool
 	is_superuser: bool
 	created_at: datetime

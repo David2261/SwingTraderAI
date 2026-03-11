@@ -23,3 +23,25 @@ class TickerOut(TickerBase):
 	created_at: datetime
 
 	model_config = ConfigDict(from_attributes=True)
+
+
+class OHLCVDataOut(BaseModel):
+	timestamp: datetime
+	open: Optional[float]
+	high: Optional[float]
+	low: Optional[float]
+	close: Optional[float]
+	volume: Optional[float]
+
+	model_config = ConfigDict(from_attributes=True)
+
+
+class TickerSearchOut(BaseModel):
+	id: str
+	symbol: str
+	asset_type: str
+	exchange: Optional[str]
+	base_currency: Optional[str]
+	quote_currency: Optional[str]
+
+	model_config = ConfigDict(from_attributes=True)

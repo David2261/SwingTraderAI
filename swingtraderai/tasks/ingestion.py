@@ -8,7 +8,7 @@ from celery import Task, shared_task
 from sqlalchemy import text
 
 from swingtraderai.db.session import get_db
-from swingtraderai.ingestion.saver import upsert_market_data_batch
+from swingtraderai.ingestion.saver import ensure_ticker, upsert_market_data_batch
 from swingtraderai.ingestion.sources.base import BaseSource
 from swingtraderai.ingestion.sources.binance import BinanceSource
 from swingtraderai.ingestion.sources.bybit import BybitSource
@@ -30,59 +30,59 @@ async def _async_ingest_ohlcv(
 	lookback_days: int = 30,
 ) -> Dict[str, Any]:
 	"""
-	Асинхронная загрузка и сохранение OHLCV-данных с инкрементальной логикой.
+	Оптимизированная асинхронная загрузка.
 	"""
-
 	async with asynccontextmanager(get_db)() as session:
+		ticker_id = await ensure_ticker(
+			session=session,
+			symbol=symbol,
+			asset_type="stock" if source_name == "moex" else "crypto",
+			exchange=source_name,
+		)
+
 		result = await session.execute(
 			text(
 				"""
 				SELECT MAX(timestamp)
 				FROM market_data
-				WHERE symbol = :sym
+				WHERE ticker_id = :t_id
 					AND timeframe = :tf
-					AND source = :src
 				"""
 			),
-			{"sym": symbol, "tf": timeframe, "src": source_name},
+			{"t_id": ticker_id, "tf": timeframe},
 		)
 		last_ts: datetime | None = result.scalar()
 
-	if last_ts is not None:
-		since = last_ts + timedelta(seconds=1)
-	else:
-		since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+		if last_ts is not None:
+			if last_ts.tzinfo is None:
+				last_ts = last_ts.replace(tzinfo=timezone.utc)
+			since = last_ts + timedelta(seconds=1)
+		else:
+			since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
 
-	source_class = SOURCES.get(source_name)
-	if source_class is None:
-		raise ValueError(f"Неизвестный источник: {source_name}")
+		source_class = SOURCES.get(source_name)
+		if source_class is None:
+			raise ValueError(f"Неизвестный источник: {source_name}")
 
-	source: BaseSource = source_class()
+		source: BaseSource = source_class()
 
-	try:
 		df: pd.DataFrame = source.fetch_ohlcv(
 			symbol=symbol,
 			timeframe=timeframe,
 			since=since,
 		)
-	except Exception as e:
-		raise e
 
-	if df.empty:
-		return {"status": "empty", "inserted": 0, "updated": 0, "total": 0}
+		if df.empty:
+			return {"status": "empty", "inserted": 0, "updated": 0, "total": 0}
 
-	df["symbol"] = symbol
-	df["timeframe"] = timeframe
+		df["symbol"] = symbol
+		df["timeframe"] = timeframe
 
-	async with asynccontextmanager(get_db)() as session:
-		try:
-			inserted, updated = await upsert_market_data_batch(
-				session=session,
-				df=df,
-				source=source_name,
-			)
-		except Exception as exc:
-			raise exc
+		inserted, updated = await upsert_market_data_batch(
+			session=session,
+			df=df,
+			source=source_name,
+		)
 
 	return {
 		"status": "ok",

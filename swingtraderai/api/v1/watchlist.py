@@ -1,14 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from typing import Any, List
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from swingtraderai.api.deps import get_current_user
-from swingtraderai.db.models.market import Ticker
+from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
-from swingtraderai.schemas.watchlist import WatchlistItemCreate, WatchlistItemOut
+from swingtraderai.schemas.watchlist import (
+	WatchlistDataItem,
+	WatchlistItemCreate,
+	WatchlistItemOut,
+)
 
 router = APIRouter(prefix="/users/me/watchlist", tags=["watchlist"])
 
@@ -93,3 +99,99 @@ async def remove_from_watchlist(
 	await db.delete(item)
 	await db.commit()
 	return None
+
+
+@router.get("/data", response_model=List[WatchlistDataItem])
+async def get_watchlist_with_prices(
+	limit: int = Query(50, ge=1, le=200, description="Максимум элементов"),
+	sort_by: str = Query(
+		"change_percent",
+		description="Сортировка: symbol, change_percent, volume, price",
+	),
+	order: str = Query("desc", description="Порядок: asc / desc"),
+	current_user: User = Depends(get_current_user),
+	db: AsyncSession = Depends(get_db),
+) -> List[WatchlistDataItem]:
+	"""
+	Возвращает watchlist текущего пользователя с актуальными ценами,
+	изменением за день и объёмом.
+
+	Это основной экран для просмотра портфеля/наблюдения.
+	"""
+	# Базовый запрос: все items watchlist + последний MarketData по каждому тикеру
+	subq = (
+		select(
+			MarketData.ticker_id,
+			MarketData.close.label("last_price"),
+			MarketData.volume.label("last_volume"),
+			MarketData.timestamp,
+			func.lag(MarketData.close)
+			.over(partition_by=MarketData.ticker_id, order_by=MarketData.timestamp)
+			.label("prev_price"),
+		).order_by(MarketData.ticker_id, MarketData.timestamp.desc())
+	).subquery()
+
+	last_prices = (
+		select(subq)
+		.distinct(subq.c.ticker_id)
+		.order_by(subq.c.ticker_id, subq.c.timestamp.desc())
+	).subquery()
+
+	stmt = (
+		select(
+			WatchlistItem,
+			Ticker.symbol,
+			Ticker.asset_type,
+			last_prices.c.last_price,
+			last_prices.c.last_volume,
+			last_prices.c.prev_price,
+		)
+		.join(Watchlist, WatchlistItem.watchlist_id == Watchlist.id)
+		.join(Ticker, WatchlistItem.ticker_id == Ticker.id)
+		.join(last_prices, last_prices.c.ticker_id == Ticker.id)
+		.where(Watchlist.owner_id == current_user.id)
+	)
+
+	sort_field: Any = None
+
+	if sort_by == "price":
+		sort_field = last_prices.c.last_price
+	elif sort_by == "volume":
+		sort_field = last_prices.c.last_volume
+	elif sort_by == "change_percent":
+		sort_field = (
+			last_prices.c.last_price - last_prices.c.prev_price
+		) / func.nullif(last_prices.c.prev_price, 0)
+	else:
+		sort_field = Ticker.symbol
+
+	if order.lower() == "asc":
+		stmt = stmt.order_by(sort_field.asc())
+	else:
+		stmt = stmt.order_by(sort_field.desc())
+
+	result = await db.execute(stmt.limit(limit))
+	rows = result.all()
+
+	items = []
+	for row in rows:
+		wi, symbol, a_type, lp, lv, pp = row
+
+		change_abs = float(lp - pp) if lp and pp else 0.0
+		change_pct = float((lp - pp) / pp * 100) if lp and pp and pp != 0 else 0.0
+
+		items.append(
+			WatchlistDataItem(
+				item_id=wi.id,
+				ticker_id=wi.ticker_id,
+				symbol=symbol,
+				asset_type=a_type,
+				last_price=float(lp) if lp else None,
+				change_percent=change_pct,
+				change_abs=change_abs,
+				volume=float(lv) if lv else None,
+				added_at=wi.created_at,
+			)
+		)
+
+	return items

@@ -82,6 +82,7 @@ async def upsert_market_data_batch(
 
 			records.append(
 				{
+					"id": uuid.uuid4(),
 					"ticker_id": ticker_id,
 					"timeframe": str(row["timeframe"]),
 					"timestamp": timestamp,
@@ -91,7 +92,6 @@ async def upsert_market_data_batch(
 					"close": row.get("close"),
 					"volume": row.get("volume"),
 					"created_at": datetime.now(timezone.utc),
-					"source": source,
 				}
 			)
 
@@ -109,7 +109,6 @@ async def upsert_market_data_batch(
 				"close": stmt.excluded.close,
 				"volume": stmt.excluded.volume,
 				"created_at": stmt.excluded.created_at,
-				"source": stmt.excluded.source,
 			},
 		)
 

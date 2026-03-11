@@ -90,10 +90,6 @@ async def test_engine_creation_parameters():
 		assert args[0] == settings.DATABASE_URL
 		assert kwargs.get("echo") is False
 		assert kwargs.get("future") is True
-		assert kwargs.get("pool_pre_ping") is True
-		assert kwargs.get("pool_size") == 5
-		assert kwargs.get("max_overflow") == 10
-		assert kwargs.get("pool_timeout") == 30
 
 
 def test_sessionmaker_configured_correctly():
