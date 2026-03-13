@@ -1,0 +1,30 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    libpq-dev \
+    libblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    libopenblas-dev \
+    curl \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock ./
+
+RUN pip install --no-cache-dir poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-root --no-interaction --no-ansi --with ml
+
+COPY swingtraderai swingtraderai
+COPY alembic alembic
+COPY alembic.ini .
+COPY celery_app.py .
+
+CMD ["celery", "-A", "swingtraderai.celery", "worker", "--loglevel=info", "-Q", "ml,inference,training", "--concurrency=2"]

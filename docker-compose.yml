@@ -40,5 +40,19 @@ services:
     ports:
       - "6379:6379"
 
+  ml-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.tml
+    command: celery -A swingtraderai.celery worker -Q ml,training,inference -c 2 --loglevel=info
+    volumes:
+      - ./models:/app/models
+    depends_on:
+      - redis
+      - rabbitmq
+      - db
+    environment:
+      - PYTHONUNBUFFERED=1
+
 volumes:
   pgdata:
