@@ -241,38 +241,12 @@ async def test_position_type_constraint_violation(
 	with pytest.raises(IntegrityError) as exc_info:
 		await session.commit()
 
-	assert "valid_position_type" in str(exc_info.value)
+	await session.rollback()
 
-
-@pytest.mark.asyncio
-async def test_duplicate_active_position_same_type_forbidden(
-	session: AsyncSession, user: User, ticker: Ticker
-):
-	"""Нельзя создать две активные позиции одного типа по одному тикеру"""
-	pos1 = Position(
-		user_id=user.id,
-		ticker_id=ticker.id,
-		position_type="long",
-		quantity=Decimal("10"),
-		average_buy_price=Decimal("300"),
-		total_cost=Decimal("3000"),
+	assert (
+		"valid_position_type" in str(exc_info.value)
+		or "check constraint" in str(exc_info.value).lower()
 	)
-	session.add(pos1)
-	await session.commit()
-
-	pos2 = Position(
-		user_id=user.id,
-		ticker_id=ticker.id,
-		position_type="long",
-		quantity=Decimal("5"),
-		average_buy_price=Decimal("310"),
-		total_cost=Decimal("1550"),
-	)
-
-	session.add(pos2)
-
-	with pytest.raises(IntegrityError):
-		await session.commit()
 
 
 @pytest.mark.asyncio

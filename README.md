@@ -122,6 +122,7 @@ Before pushing your code, it is recommended to run the full checkup:
 
 ```bash
 poetry run black . && poetry run ruff check . --fix && poetry run mypy .
+pre-commit run --all-files
 
 ```
 

@@ -24,7 +24,7 @@ ArrayLike: TypeAlias = npt.ArrayLike
 NDArrayInt: TypeAlias = npt.NDArray[np.int_]
 
 
-class PurgedTimeSeriesSplit(TimeSeriesSplit):  # type: ignore[misc]
+class PurgedTimeSeriesSplit(TimeSeriesSplit):
 	"""TimeSeriesSplit с удалением перекрывающихся данных (purging)"""
 
 	def __init__(self, n_splits: int = 5, purge_size: int = 5) -> None:

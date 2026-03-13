@@ -116,8 +116,8 @@ class User(Base):
 class Position(Base):
 	__tablename__ = "positions"
 
-	id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-	user_id: Mapped[int] = mapped_column(
+	id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
+	user_id: Mapped[UUID] = mapped_column(
 		ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
 	)
 	ticker_id: Mapped[UUID] = mapped_column(
@@ -155,4 +155,12 @@ class Position(Base):
 			"position_type IN ('long', 'short')", name="valid_position_type"
 		),
 		Index("ix_positions_user_ticker_type", "user_id", "ticker_id", "position_type"),
+		Index(
+			"uq_active_position_per_user_ticker_type",
+			"user_id",
+			"ticker_id",
+			"position_type",
+			postgresql_where=text("closed_at IS NULL"),
+			unique=True,
+		),
 	)

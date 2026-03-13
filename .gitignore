@@ -29,6 +29,20 @@ MANIFEST
 .env
 *.lock
 
+# ML
+*.joblib
+*.pkl
+*.onnx
+check_trainer.py
+check_predict.py
+
+# Datasets
+*.csv
+.kagglehub/
+datasets/
+logs/
+events.out.tfevents.*
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

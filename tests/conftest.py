@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from swingtraderai.db.base import Base
+from swingtraderai.db.models.market import Ticker
+from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_session
 from swingtraderai.main import app
 
@@ -76,3 +78,43 @@ async def check_db_connection():
 			await conn.execute("SELECT 1")
 	finally:
 		await engine.dispose()
+
+
+@pytest.fixture
+async def user(session: AsyncSession):
+	"""Создает тестового пользователя и возвращает его"""
+	user = User(
+		username="testuser",
+		email="test@example.com",
+		password_hash="fakehash123",
+	)
+
+	session.add(user)
+	await session.commit()
+	await session.refresh(user)
+
+	yield user
+
+	await session.delete(user)
+	await session.commit()
+
+
+@pytest.fixture
+async def ticker(session: AsyncSession):
+	"""Создает тестовый тикер и возвращает его"""
+	ticker = Ticker(
+		symbol="AAPL",
+		asset_type="stock",
+		exchange="NASDAQ",
+		base_currency="USD",
+		quote_currency="USD",
+		is_active=True,
+	)
+
+	session.add(ticker)
+	await session.commit()
+	await session.refresh(ticker)
+
+	yield ticker
+	await session.delete(ticker)
+	await session.commit()
