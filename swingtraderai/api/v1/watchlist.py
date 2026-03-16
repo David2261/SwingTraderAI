@@ -25,6 +25,13 @@ async def add_to_watchlist(
 	current_user: User = Depends(get_current_user),
 	db: AsyncSession = Depends(get_db),
 ) -> WatchlistItemOut:
+	"""
+	Добавление тикера в список наблюдения текущего пользователя.
+	Проверяет:
+	- Существование тикера
+	- Отсутствие тикера в текущем watchlist
+	При необходимости создает новый watchlist для пользователя.
+	"""
 	ticker = await db.get(Ticker, item_in.ticker_id)
 	if not ticker:
 		raise HTTPException(status_code=404, detail="Ticker not found")
@@ -66,6 +73,10 @@ async def add_to_watchlist(
 async def get_my_watchlist(
 	current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> list[WatchlistItemOut]:
+	"""
+	Получение списка всех тикеров в watchlist текущего пользователя.
+	Возвращает базовую информацию без ценовых данных.
+	"""
 	result = await db.execute(
 		select(WatchlistItem)
 		.join(Watchlist)
@@ -83,6 +94,10 @@ async def remove_from_watchlist(
 	current_user: User = Depends(get_current_user),
 	db: AsyncSession = Depends(get_db),
 ) -> None:
+	"""
+	Удаление тикера из списка наблюдения.
+	Проверяет права доступа и существование элемента.
+	"""
 	stmt = select(WatchlistItem).where(WatchlistItem.id == item_id)
 	result = await db.execute(stmt)
 	item = result.scalar_one_or_none()
@@ -115,10 +130,8 @@ async def get_watchlist_with_prices(
 	"""
 	Возвращает watchlist текущего пользователя с актуальными ценами,
 	изменением за день и объёмом.
-
 	Это основной экран для просмотра портфеля/наблюдения.
 	"""
-	# Базовый запрос: все items watchlist + последний MarketData по каждому тикеру
 	subq = (
 		select(
 			MarketData.ticker_id,

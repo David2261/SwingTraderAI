@@ -7,14 +7,24 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.db.models.analysis import Analysis, Signal
-from swingtraderai.db.models.market import Ticker
+from swingtraderai.db.models.market import Exchange, Ticker
 
 
 @pytest.mark.asyncio
 async def test_analysis_creation_and_defaults(session: AsyncSession):
 	"""Проверка создания Analysis + дефолтные значения + JSONB"""
-	ticker = Ticker(symbol="ETHUSDT", asset_type="crypto", exchange="BINANCE")
+	binance = Exchange(name="Binance", code="BINANCE")
+	session.add(binance)
+	await session.commit()
+	ticker = Ticker(
+		symbol="ETHUSDT",
+		asset_type="CRYPTO",
+		exchange_id=binance.id,
+		base_currency="BTC",
+		quote_currency="USDT",
+	)
 	session.add(ticker)
+	await session.commit()
 	await session.commit()
 	await session.refresh(ticker)
 

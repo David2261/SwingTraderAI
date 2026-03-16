@@ -26,6 +26,11 @@ async def create_ticker(
 	db: AsyncSession = Depends(get_db),
 	current_user: User = Depends(get_current_user),
 ) -> Ticker:
+	"""
+	Создание нового тикера.
+	Доступно только авторизованным пользователям.
+	Проверяет уникальность символа тикера.
+	"""
 	existing = await db.execute(select(Ticker).where(Ticker.symbol == ticker_in.symbol))
 	if existing.scalar_one_or_none():
 		raise HTTPException(
@@ -41,6 +46,10 @@ async def create_ticker(
 
 @router.get("/{ticker_id}", response_model=TickerOut)
 async def get_ticker(ticker_id: str, db: AsyncSession = Depends(get_db)) -> Ticker:
+	"""
+	Получение информации о конкретном тикере по его ID.
+	Возвращает 404, если тикер не найден.
+	"""
 	ticker = await db.get(Ticker, ticker_id)
 	if not ticker:
 		raise HTTPException(status_code=404, detail="Ticker not found")
@@ -51,6 +60,10 @@ async def get_ticker(ticker_id: str, db: AsyncSession = Depends(get_db)) -> Tick
 async def list_tickers(
 	skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
 ) -> Sequence[TickerOut]:
+	"""
+	Получение списка всех тикеров с пагинацией.
+	Возвращает тикеры, отсортированные по символу.
+	"""
 	result = await db.execute(
 		select(Ticker).offset(skip).limit(limit).order_by(Ticker.symbol)
 	)
@@ -70,6 +83,12 @@ async def get_ticker_historical_data(
 	"""
 	Возвращает исторические OHLCV данные для тикера.
 	Идеально для построения графика или таблицы цен.
+	Параметры:
+	- ticker_id: ID тикера
+	- timeframe: таймфрейм свечей (1m, 5m, 1h, 1d и т.д.)
+	- limit: максимальное количество свечей (по умолчанию 500)
+	- start_date: фильтр по начальной дате
+	- end_date: фильтр по конечной дате
 	"""
 	ticker = await db.get(Ticker, ticker_id)
 	if not ticker:
@@ -108,15 +127,16 @@ async def search_tickers(
 	"""
 	Удобный поиск тикеров для добавления в watchlist.
 	Ищет по символу, названию, бирже (LIKE %q%).
+	Параметры:
+	- q: поисковый запрос (минимальная длина 1 символ)
+	- limit: максимальное количество результатов (от 1 до 100)
 	"""
 	search_term = f"%{q.lower()}%"
 
 	stmt = (
 		select(Ticker)
 		.where(
-			(Ticker.symbol.ilike(search_term))
-			| (Ticker.asset_type.ilike(search_term))
-			| (Ticker.exchange.ilike(search_term))
+			(Ticker.symbol.ilike(search_term)) | (Ticker.asset_type.ilike(search_term))
 		)
 		.order_by(Ticker.symbol)
 		.limit(limit)
@@ -137,6 +157,9 @@ async def bulk_create_tickers(
 	"""
 	Массовое добавление или синхронизация тикеров.
 	Если тикер с таким symbol уже существует — обновляет поля (кроме id).
+	Ограничения:
+	- Максимум 500 тикеров за один запрос
+	- Доступно только авторизованным пользователям
 	"""
 	if len(tickers_in) > 500:
 		raise HTTPException(

@@ -9,14 +9,14 @@ from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swingtraderai.db.models.market import MarketData, Ticker
+from swingtraderai.db.models.market import Exchange, MarketData, Ticker
 
 
 async def ensure_ticker(
 	session: AsyncSession,
 	symbol: str,
 	asset_type: str = "stock",
-	exchange: str | None = None,
+	exchange_id: uuid.UUID | None = None,
 	base_currency: str | None = None,
 	quote_currency: str | None = None,
 ) -> uuid.UUID:
@@ -33,7 +33,7 @@ async def ensure_ticker(
 	new_ticker = Ticker(
 		symbol=symbol,
 		asset_type=asset_type,
-		exchange=exchange,
+		exchange_id=exchange_id,
 		base_currency=base_currency,
 		quote_currency=quote_currency,
 	)
@@ -55,6 +55,12 @@ async def upsert_market_data_batch(
 	if df.empty:
 		return 0, 0
 
+	current_exchange_id = None
+	if source:
+		ex_stmt = select(Exchange.id).where(Exchange.code == source.upper())
+		ex_result = await session.execute(ex_stmt)
+		current_exchange_id = ex_result.scalar_one_or_none()
+
 	numeric_cols = ["open", "high", "low", "close", "volume"]
 	for col in numeric_cols:
 		if col in df.columns:
@@ -68,7 +74,7 @@ async def upsert_market_data_batch(
 			session=session,
 			symbol=symbol,
 			asset_type="stock" if source == "moex" else "crypto",
-			exchange=source,
+			exchange_id=current_exchange_id,
 		)
 
 		records: List[Dict[str, Any]] = []

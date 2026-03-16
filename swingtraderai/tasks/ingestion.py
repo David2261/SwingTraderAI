@@ -37,7 +37,6 @@ async def _async_ingest_ohlcv(
 			session=session,
 			symbol=symbol,
 			asset_type="stock" if source_name == "moex" else "crypto",
-			exchange=source_name,
 		)
 
 		result = await session.execute(

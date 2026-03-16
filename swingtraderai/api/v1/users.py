@@ -25,6 +25,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserOut)
 async def read_users_me(current_user: User = Depends(get_current_user)) -> UserOut:
+	"""
+	Получение информации о текущем авторизованном пользователе.
+	"""
 	return UserOut.from_orm(current_user)
 
 
@@ -34,6 +37,10 @@ async def read_user(
 	db: AsyncSession = Depends(get_db),
 	current_user: User = Depends(get_current_user),
 ) -> UserOut:
+	"""
+	Получение информации о пользователе по его ID.
+	Доступно только авторизованным пользователям.
+	"""
 	user = await db.get(User, user_id)
 	if not user:
 		raise HTTPException(status_code=404, detail="User not found")
@@ -149,6 +156,13 @@ async def add_position(
 	current_user: User = Depends(get_current_user),
 	db: AsyncSession = Depends(get_db),
 ) -> PositionOut:
+	"""
+	Добавление новой позиции в портфель пользователя.
+	Проверяет:
+	- Существование тикера
+	- Отсутствие активной позиции по тому же тикеру и типу
+	Рассчитывает общую стоимость позиции с учетом типа (long/short).
+	"""
 	ticker = await db.get(Ticker, position_in.ticker_id)
 	if not ticker:
 		raise HTTPException(status_code=404, detail="Ticker not found")
@@ -196,6 +210,11 @@ async def update_position(
 	current_user: User = Depends(get_current_user),
 	db: AsyncSession = Depends(get_db),
 ) -> PositionOut:
+	"""
+	Обновление существующей позиции.
+	Проверяет права доступа и статус позиции (не закрыта).
+	При изменении количества или цены пересчитывает общую стоимость.
+	"""
 	position = await db.get(Position, position_id)
 	if not position:
 		raise HTTPException(status_code=404, detail="Position not found")
@@ -234,6 +253,8 @@ async def delete_position(
 ) -> None:
 	"""
 	Удаление (закрытие) позиции.
+	Физически удаляет позицию из БД.
+	Проверяет права доступа и существование позиции.
 	"""
 	position = await db.get(Position, position_id)
 	if not position:

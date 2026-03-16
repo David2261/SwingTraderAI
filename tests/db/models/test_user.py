@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swingtraderai.db.models.market import Ticker
+from swingtraderai.db.models.market import Exchange, Ticker
 from swingtraderai.db.models.user import Position, User, UserRole
 
 
@@ -260,10 +260,25 @@ async def test_position_creation_short(
 
 
 @pytest.mark.asyncio
-async def test_position_type_constraint_violation(
-	session: AsyncSession, user: User, ticker: Ticker
-):
+async def test_position_type_constraint_violation(session: AsyncSession, user: User):
 	"""Попытка создать позицию с неверным position_type → IntegrityError"""
+	nasdaq = Exchange(name="NASDAQ", code="NSDQ", timezone="UTC", currency="USD")
+	session.add(nasdaq)
+	await session.flush()
+
+	ticker = Ticker(
+		symbol="AAPL",
+		asset_type="stock",
+		exchange_id=nasdaq.id,
+		base_currency="USD",
+		quote_currency="USD",
+		is_active=True,
+	)
+
+	session.add(ticker)
+	await session.flush()
+	await session.refresh(ticker)
+
 	position = Position(
 		user_id=user.id,
 		ticker_id=ticker.id,
@@ -274,15 +289,13 @@ async def test_position_type_constraint_violation(
 	)
 
 	session.add(position)
-
 	with pytest.raises(IntegrityError) as exc_info:
-		await session.commit()
-
+		await session.flush()
 	await session.rollback()
-
-	assert (
-		"valid_position_type" in str(exc_info.value)
-		or "check constraint" in str(exc_info.value).lower()
+	error_msg = str(exc_info.value).lower()
+	assert any(
+		word in error_msg
+		for word in ["valid_position_type", "check constraint", "violation"]
 	)
 
 

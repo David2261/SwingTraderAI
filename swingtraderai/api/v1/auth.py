@@ -30,6 +30,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def register(
 	user_in: UserCreate, db: AsyncSession = Depends(get_db)
 ) -> Dict[str, str]:
+	"""
+	Регистрация нового пользователя.
+	Проверяет, не существует ли пользователь с таким email,
+	создает нового пользователя
+	и возвращает токены доступа и обновления.
+	"""
 	existing = await db.execute(select(User).where(User.email == user_in.email))
 	if existing.scalar_one_or_none():
 		raise_http_exception(UserAlreadyExistsException())
@@ -58,6 +64,11 @@ async def register(
 async def login(
 	form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ) -> Dict[str, str]:
+	"""
+	Аутентификация пользователя.
+	Проверяет учетные данные и возвращает токены доступа,
+	а также токен и обновления.
+	"""
 	result = await db.execute(select(User).where(User.email == form_data.username))
 	user = result.scalar_one_or_none()
 
@@ -99,7 +110,7 @@ async def reset_password(
 	db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
 	"""
-	Смена пароля по токену reset_password.
+	Смена пароля по токену.
 	"""
 	try:
 		payload = jwt.decode(
