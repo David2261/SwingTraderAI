@@ -1,4 +1,5 @@
 import pandas as pd
+import pandas_ta as ta
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -11,6 +12,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 	df.ta.rsi(length=14, append=True)
 
 	df.ta.atr(length=14, append=True)
+	_ = ta
 	atr_col = "ATRr_14"
 
 	from swingtraderai.indicators.levels import add_key_levels_indicators

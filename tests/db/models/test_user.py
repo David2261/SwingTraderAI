@@ -167,6 +167,43 @@ async def test_telegram_id_nullable_and_unique_violation(session: AsyncSession):
 
 
 @pytest.mark.asyncio
+async def test_user_role_field(session: AsyncSession):
+	"""Проверяем корректную работу поля role в модели User"""
+	user1 = User(
+		username="testuser1",
+		email="test1@example.com",
+		password_hash="fakehash123",
+	)
+	user2 = User(
+		username="testuser2",
+		email="test2@example.com",
+		password_hash="fakehash123",
+		role=UserRole.ADMIN,
+	)
+	user3 = User(
+		username="testuser3",
+		email="test3@example.com",
+		password_hash="fakehash123",
+		role=UserRole.TESTER,
+	)
+
+	session.add_all([user1, user2, user3])
+	await session.commit()
+
+	assert user1.role == UserRole.USER
+	assert user2.role == UserRole.ADMIN
+	assert user3.role == UserRole.TESTER
+
+	await session.refresh(user1)
+	await session.refresh(user2)
+	await session.refresh(user3)
+
+	assert user1.role == UserRole.USER
+	assert user2.role == UserRole.ADMIN
+	assert user3.role == UserRole.TESTER
+
+
+@pytest.mark.asyncio
 async def test_position_creation_long(
 	session: AsyncSession, user: User, ticker: Ticker
 ):

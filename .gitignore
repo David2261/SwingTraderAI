@@ -33,8 +33,6 @@ MANIFEST
 *.joblib
 *.pkl
 *.onnx
-check_trainer.py
-check_predict.py
 
 # Datasets
 *.csv
@@ -42,6 +40,7 @@ check_predict.py
 datasets/
 logs/
 events.out.tfevents.*
+.tools/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

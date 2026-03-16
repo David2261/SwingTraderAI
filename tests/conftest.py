@@ -56,9 +56,9 @@ async def session(engine):
 
 # Подмена зависимости FastAPI
 @pytest.fixture
-async def client(db_session):
+async def client(session):
 	async def override_get_session():
-		yield db_session
+		yield session
 
 	app.dependency_overrides[get_session] = override_get_session
 

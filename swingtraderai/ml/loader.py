@@ -42,7 +42,7 @@ def load_latest_model(ticker_id: UUID, timeframe: str = "1h") -> ModelDataSchema
 		ticker_id=ticker_id,
 		timeframe=timeframe,
 		model_path=str(latest_file),
-		created_at=datetime.fromtimestamp(latest_file.stat().st_ctime),
+		created_at=datetime.fromtimestamp(latest_file.stat().st_mtime),
 		features=data.get("features", []),
 	)
 

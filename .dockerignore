@@ -13,6 +13,7 @@ env/
 
 .poetry/
 poetry.toml
+.tools/
 
 .vscode/
 .idea/

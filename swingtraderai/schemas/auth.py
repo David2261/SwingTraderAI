@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from swingtraderai.db.models.user import UserRole
+
 
 class UserBase(BaseModel):
 	username: str = Field(..., min_length=3, max_length=50)
@@ -31,6 +33,7 @@ class UserPasswordUpdate(BaseModel):
 
 class UserOut(UserBase):
 	id: UUID
+	role: UserRole
 	is_active: bool
 	is_superuser: bool
 	created_at: datetime
