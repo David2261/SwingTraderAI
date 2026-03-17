@@ -4,6 +4,7 @@ import pandas as pd
 
 from swingtraderai.indicators.matrix import add_all_indicators
 from swingtraderai.ml.loader import load_latest_model
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
 from swingtraderai.schemas.prediction import (
 	ModelDataSchema,
 	PredictionRequest,
@@ -21,7 +22,7 @@ async def predict(
 
 	model = model_data.model
 	scaler = model_data.scaler
-	feature_cols = model_data.features
+	feature_cols = model_data.features or MARKET_DATA_SCHEMA.MODEL_FEATURE_COLUMNS
 
 	processed_df = add_all_indicators(current_df)
 
@@ -80,4 +81,9 @@ async def predict_with_request(
 	request: PredictionRequest, current_df: pd.DataFrame
 ) -> PredictionResult:
 	"""Версия функции, принимающая Pydantic модель запроса."""
+	required_cols = set(MARKET_DATA_SCHEMA.BASE_COLUMNS)
+	missing = required_cols - set(current_df.columns)
+
+	if missing:
+		raise ValueError(f"Отсутствуют базовые колонки: {missing}")
 	return await predict(request.ticker_id, current_df, request.timeframe)

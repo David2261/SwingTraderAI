@@ -4,6 +4,8 @@ from typing import Iterable, Optional
 import pandas as pd
 from moexalgo import Ticker
 
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
+
 from .base import BaseSource
 
 
@@ -61,9 +63,11 @@ class MoexSource(BaseSource):
 		if limit and len(df) > limit:
 			df = df.iloc[-limit:]
 
+		time_col = MARKET_DATA_SCHEMA.TIME_COLUMN
+
 		df = df.reset_index().rename(
 			columns={
-				"begin": "timestamp",
+				"begin": time_col,
 				"open": "open",
 				"high": "high",
 				"low": "low",
@@ -71,21 +75,19 @@ class MoexSource(BaseSource):
 				"volume": "volume",
 			}
 		)
-		if "timestamp" not in df.columns:
-			for time_col in ["start", "datetime", "time"]:
-				if time_col in df.columns:
-					df = df.rename(columns={time_col: "timestamp"})
+		if time_col not in df.columns:
+			for col in ["start", "datetime", "time"]:
+				if col in df.columns:
+					df = df.rename(columns={col: time_col})
 					break
 
-		# Преобразуем timestamp и УБЕДИМСЯ что он timezone-aware
-		if "timestamp" in df.columns:
-			df["timestamp"] = pd.to_datetime(df["timestamp"])
-			if df["timestamp"].dt.tz is None:
-				df["timestamp"] = df["timestamp"].dt.tz_localize("UTC")
-			elif df["timestamp"].dt.tz != timezone.utc:
-				df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
+		df[time_col] = pd.to_datetime(df[time_col])
+		if df[time_col].dt.tz is None:
+			df[time_col] = df[time_col].dt.tz_localize("UTC")
+		else:
+			df[time_col] = df[time_col].dt.tz_convert("UTC")
 
-		result_columns = ["timestamp", "open", "high", "low", "close", "volume"]
-		existing_columns = [col for col in result_columns if col in df.columns]
+		df = MARKET_DATA_SCHEMA.normalize_columns(df)
+		MARKET_DATA_SCHEMA.validate_base_columns(df)
 
-		return df[existing_columns]
+		return df[MARKET_DATA_SCHEMA.BASE_COLUMNS]

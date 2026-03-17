@@ -20,7 +20,7 @@ def test_fetch_ohlcv_unsupported_timeframe(mock_ticker_class, moex_source):
 
 
 def test_fetch_ohlcv_renames_columns(moex_source, mocker):
-	"""Переименование колонок и обработка timestamp"""
+	"""Переименование колонок и обработка time"""
 	mock_df = pd.DataFrame(
 		{
 			"begin": pd.date_range("2025-01-01", periods=3, freq="1h"),
@@ -29,6 +29,7 @@ def test_fetch_ohlcv_renames_columns(moex_source, mocker):
 			"low": [95.0, 96.0, 97.0],
 			"close": [102.0, 103.0, 104.0],
 			"volume": [1000.0, 1100.0, 1200.0],
+			"timeframe": ["1h", "1h", "1h"],
 		}
 	)
 
@@ -38,10 +39,9 @@ def test_fetch_ohlcv_renames_columns(moex_source, mocker):
 	with patch("swingtraderai.ingestion.sources.moex.Ticker", return_value=mock_ticker):
 		df = moex_source.fetch_ohlcv("SBER", "1h")
 
-	expected_columns = ["timestamp", "open", "high", "low", "close", "volume"]
+	expected_columns = ["time", "open", "high", "low", "close", "volume", "timeframe"]
 	assert list(df.columns) == expected_columns
-	assert pd.api.types.is_datetime64_any_dtype(df["timestamp"])
-	assert df["timestamp"].dt.tz == timezone.utc
+	assert df["time"].dt.tz == timezone.utc
 
 
 @pytest.mark.parametrize(
@@ -121,6 +121,7 @@ def test_fetch_ohlcv_applies_limit(moex_source, mocker):
 			"low": [95.0] * 1500,
 			"close": [102.0] * 1500,
 			"volume": [1000.0] * 1500,
+			"timeframe": ["1h"] * 1500,
 		}
 	)
 
@@ -132,7 +133,7 @@ def test_fetch_ohlcv_applies_limit(moex_source, mocker):
 
 	assert len(df) == 500
 	# Проверяем последние записи
-	assert df["timestamp"].iloc[-1] == mock_df["begin"].iloc[-1]
+	assert df["time"].iloc[-1] == mock_df["begin"].iloc[-1]
 
 
 def test_fetch_ohlcv_handles_empty_result(moex_source, mocker):

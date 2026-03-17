@@ -8,8 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid6 import uuid7
 
 from swingtraderai.db.models.market import Exchange, MarketData, Ticker
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
 
 
 async def ensure_ticker(
@@ -52,6 +54,8 @@ async def upsert_market_data_batch(
 	"""
 	Массовый upsert рыночных данных через PostgreSQL ON CONFLICT.
 	"""
+	df = MARKET_DATA_SCHEMA.normalize_columns(df)
+	MARKET_DATA_SCHEMA.validate_base_columns(df)
 	if df.empty:
 		return 0, 0
 
@@ -61,8 +65,11 @@ async def upsert_market_data_batch(
 		ex_result = await session.execute(ex_stmt)
 		current_exchange_id = ex_result.scalar_one_or_none()
 
-	numeric_cols = ["open", "high", "low", "close", "volume"]
-	for col in numeric_cols:
+	missing = MARKET_DATA_SCHEMA.REQUIRED_INSERT_COLUMNS - set(df.columns)
+	if missing:
+		raise ValueError(f"Missing required columns: {missing}")
+
+	for col in MARKET_DATA_SCHEMA.DECIMAL_COLUMNS:
 		if col in df.columns:
 			df[col] = df[col].apply(lambda x: Decimal(str(x)) if pd.notna(x) else None)
 
@@ -80,26 +87,26 @@ async def upsert_market_data_batch(
 		records: List[Dict[str, Any]] = []
 
 		for _, row in group_df.iterrows():
-			timestamp = row["timestamp"]
-			if pd.api.types.is_datetime64_any_dtype(timestamp):
-				timestamp = timestamp.to_pydatetime().replace(tzinfo=timezone.utc)
-			elif isinstance(timestamp, pd.Timestamp):
-				timestamp = timestamp.to_pydatetime().replace(tzinfo=timezone.utc)
+			timestamp = row[MARKET_DATA_SCHEMA.TIME_COLUMN]
+			if isinstance(timestamp, pd.Timestamp):
+				timestamp = timestamp.to_pydatetime()
+
+			if timestamp.tzinfo is None:
+				timestamp = timestamp.replace(tzinfo=timezone.utc)
+			else:
+				timestamp = timestamp.astimezone(timezone.utc)
 
 			records.append(
 				{
-					"id": uuid.uuid4(),
-					"ticker_id": ticker_id,
-					"timeframe": str(row["timeframe"]),
+					**{col: row.get(col) for col in MARKET_DATA_SCHEMA.BASE_COLUMNS},
 					"timestamp": timestamp,
-					"open": row.get("open"),
-					"high": row.get("high"),
-					"low": row.get("low"),
-					"close": row.get("close"),
-					"volume": row.get("volume"),
+					"ticker_id": ticker_id,
+					"timeframe": row.get("timeframe", None),
 					"created_at": datetime.now(timezone.utc),
+					"id": uuid7(),
 				}
 			)
+			inserted_count += len(records)
 
 		if not records:
 			continue
@@ -107,7 +114,7 @@ async def upsert_market_data_batch(
 		stmt: Insert = pg_insert(MarketData)
 
 		stmt = stmt.on_conflict_do_update(
-			index_elements=["ticker_id", "timeframe", "timestamp"],
+			index_elements=MARKET_DATA_SCHEMA.UNIQUE_CONSTRAINT_COLUMNS,
 			set_={
 				"open": stmt.excluded.open,
 				"high": stmt.excluded.high,
@@ -121,6 +128,8 @@ async def upsert_market_data_batch(
 		result = await session.execute(stmt, records)
 		affected = getattr(result, "rowcount", 0) or 0
 		updated_count += affected
+
+	inserted_count = inserted_count - updated_count
 
 	await session.flush()
 	await session.commit()

@@ -48,7 +48,7 @@ def test_binance_fetch_ohlcv_calls_ccxt(binance_source, mock_ccxt_binance):
 def test_binance_fetch_ohlcv_returns_dataframe(binance_source, mock_ccxt_binance):
 	"""Проверяем, что на выходе корректный DataFrame"""
 	mock_ccxt_binance.fetch_ohlcv.return_value = [
-		[1735689600000, 60000.0, 61000.0, 59000.0, 60500.0, 10.5]
+		[1735689600000, 60000.0, 61000.0, 59000.0, 60500.0, 10.5, "1h"]
 	]
 
 	df = binance_source.fetch_ohlcv("BTC/USDT", "1h")
@@ -56,4 +56,4 @@ def test_binance_fetch_ohlcv_returns_dataframe(binance_source, mock_ccxt_binance
 	assert isinstance(df, pd.DataFrame)
 	assert not df.empty
 	assert df["close"].iloc[0] == 60500.0
-	assert df["timestamp"].iloc[0] == pd.Timestamp("2025-01-01 00:00:00")
+	assert df["time"].iloc[0] == pd.Timestamp("2025-01-01 00:00:00")

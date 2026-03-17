@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
+
 
 def detect_fractal_highs_lows(df: pd.DataFrame, window: int = 2) -> pd.DataFrame:
 	"""
@@ -11,8 +13,11 @@ def detect_fractal_highs_lows(df: pd.DataFrame, window: int = 2) -> pd.DataFrame
 	Series с High-значениями в точках fractal high (NaN иначе)
 	Series с Low-значениями в точках fractal low (NaN иначе)
 	"""
-	high = df["High"]
-	low = df["Low"]
+	df = MARKET_DATA_SCHEMA.normalize_columns(df)
+	MARKET_DATA_SCHEMA.validate_base_columns(df)
+
+	high = df[MARKET_DATA_SCHEMA.HIGH_COLUMN]
+	low = df[MARKET_DATA_SCHEMA.LOW_COLUMN]
 
 	is_high = pd.Series(True, index=df.index)
 	is_low = pd.Series(True, index=df.index)
@@ -45,7 +50,7 @@ def rolling_support_resistance_zones(
 	for i in range(window, len(df)):
 		window_df = df.iloc[i - window : i]
 
-		lows = window_df["Low"]
+		lows = window_df[MARKET_DATA_SCHEMA.LOW_COLUMN]
 		unique_lows, counts_low = np.unique(
 			np.round(lows / (lows.mean() * price_tolerance))
 			* (lows.mean() * price_tolerance),
@@ -58,7 +63,7 @@ def rolling_support_resistance_zones(
 		else:
 			supports.append(np.nan)
 
-		highs = window_df["High"]
+		highs = window_df[MARKET_DATA_SCHEMA.HIGH_COLUMN]
 		unique_highs, counts_high = np.unique(
 			np.round(highs / (highs.mean() * price_tolerance))
 			* (highs.mean() * price_tolerance),
@@ -93,20 +98,21 @@ def calculate_classic_pivot_points(
 	"""
 	Классические дневные/недельные Pivot Points
 	"""
+	high = MARKET_DATA_SCHEMA.HIGH_COLUMN
+	low = MARKET_DATA_SCHEMA.LOW_COLUMN
+	close = MARKET_DATA_SCHEMA.CLOSE_COLUMN
 	resampled = (
-		df.resample(timeframe)
-		.agg({"High": "max", "Low": "min", "Close": "last"})
-		.shift(1)
+		df.resample(timeframe).agg({high: "max", low: "min", close: "last"}).shift(1)
 	)
 
-	pp = (resampled["High"] + resampled["Low"] + resampled["Close"]) / 3
+	pp = (resampled[high] + resampled[low] + resampled[close]) / 3
 
 	data = pd.DataFrame(index=resampled.index)
-	data["PP"] = pp
-	data["R1"] = 2 * pp - resampled["Low"]
-	data["S1"] = 2 * pp - resampled["High"]
-	data["R2"] = pp + (resampled["High"] - resampled["Low"])
-	data["S2"] = pp - (resampled["High"] - resampled["Low"])
+	data["pp"] = pp
+	data["r1"] = 2 * pp - resampled[low]
+	data["s1"] = 2 * pp - resampled[high]
+	data["r2"] = pp + (resampled[high] - resampled[low])
+	data["s2"] = pp - (resampled[high] - resampled[low])
 
 	return data.reindex(df.index, method="ffill")
 
@@ -120,6 +126,8 @@ def add_key_levels_indicators(
 	- support_level, resistance_level (rolling)
 	- PP, R1, S1, R2, S2 (pivot points)
 	"""
+	df = MARKET_DATA_SCHEMA.normalize_columns(df)
+	MARKET_DATA_SCHEMA.validate_base_columns(df)
 	df = df.copy()
 
 	f_high, f_low = detect_fractal_highs_lows(df, window=fractal_window)

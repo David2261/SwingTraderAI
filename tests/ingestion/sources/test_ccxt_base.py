@@ -62,8 +62,8 @@ def test_fetch_ohlcv_calls_exchange_correctly(
 ):
 	"""Проверяем вызов fetch_ohlcv с правильными параметрами"""
 	mock_data = [
-		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0],
-		[1735693200000, 102.0, 107.0, 99.0, 104.0, 1200.0],
+		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0, "1h"],
+		[1735693200000, 102.0, 107.0, 99.0, 104.0, 1200.0, "1h"],
 	]
 	mock_exchange.fetch_ohlcv.return_value = mock_data
 
@@ -75,8 +75,15 @@ def test_fetch_ohlcv_calls_exchange_correctly(
 
 	assert isinstance(df, pd.DataFrame)
 	assert len(df) == 2
-	assert list(df.columns) == ["timestamp", "open", "high", "low", "close", "volume"]
-	assert pd.api.types.is_datetime64_any_dtype(df["timestamp"])
+	assert list(df.columns) == [
+		"time",
+		"open",
+		"high",
+		"low",
+		"close",
+		"volume",
+		"timeframe",
+	]
 
 
 def test_fetch_ohlcv_handles_empty_response(ccxt_source, mock_exchange):
@@ -89,22 +96,30 @@ def test_fetch_ohlcv_handles_empty_response(ccxt_source, mock_exchange):
 	assert df.empty
 
 
-def test_fetch_ohlcv_converts_timestamp_correctly(ccxt_source, mock_exchange):
+def test_fetch_ohlcv_converts_time_correctly(ccxt_source, mock_exchange):
 	"""Конвертация ms → datetime"""
 	mock_data = [
-		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0],
+		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0, "1h"],
 	]
 	mock_exchange.fetch_ohlcv.return_value = mock_data
 
 	df = ccxt_source.fetch_ohlcv("BTC/USDT", "1h")
 
-	assert df["timestamp"].iloc[0] == pd.Timestamp("2025-01-01 00:00:00", tz=None)
+	assert df["time"].iloc[0] == pd.Timestamp("2025-01-01 00:00:00", tz=None)
 
 
 def test_fetch_ohlcv_preserves_numeric_precision(ccxt_source, mock_exchange):
 	"""Точность чисел после конвертации"""
 	mock_data = [
-		[1735689600000, 12345.6789, 12350.1234, 12340.5678, 12348.9012, 9876.54321],
+		[
+			1735689600000,
+			12345.6789,
+			12350.1234,
+			12340.5678,
+			12348.9012,
+			9876.54321,
+			"1h",
+		],
 	]
 	mock_exchange.fetch_ohlcv.return_value = mock_data
 

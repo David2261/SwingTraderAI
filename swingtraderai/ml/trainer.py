@@ -19,6 +19,7 @@ from xgboost import XGBClassifier
 
 from swingtraderai.db.session import get_db
 from swingtraderai.indicators.matrix import add_all_indicators
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
 
 ArrayLike: TypeAlias = npt.ArrayLike
 NDArrayInt: TypeAlias = npt.NDArray[np.int_]
@@ -81,12 +82,13 @@ async def train_model(
 	verbose: bool = True,
 ) -> str:
 	async with asynccontextmanager(get_db)() as session:
+		cols = ", ".join(MARKET_DATA_SCHEMA.BASE_COLUMNS)
 		query = text(
-			"""
-			SELECT time, open, high, low, close, volume
+			f"""
+			SELECT {cols}
 			FROM market_data
 			WHERE ticker_id = :ticker_id AND timeframe = :tf
-			ORDER BY time
+			ORDER BY {MARKET_DATA_SCHEMA.TIME_COLUMN}
 		"""
 		)
 		result = await session.execute(query, {"ticker_id": ticker_id, "tf": timeframe})
@@ -95,8 +97,10 @@ async def train_model(
 	if not rows:
 		raise ValueError(f"Нет данных для {ticker_id}")
 
-	df = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close", "volume"])
-	df["time"] = pd.to_datetime(df["time"])
+	df = pd.DataFrame(rows, columns=MARKET_DATA_SCHEMA.BASE_COLUMNS)
+	df[MARKET_DATA_SCHEMA.TIME_COLUMN] = pd.to_datetime(
+		df[MARKET_DATA_SCHEMA.TIME_COLUMN]
+	)
 
 	df = add_all_indicators(df)
 
@@ -109,8 +113,8 @@ async def train_model(
 	if len(df) < 300:
 		raise ValueError("Недостаточно данных после обработки")
 
-	X = df.drop(columns=["target", "time", "future_return", "close"])
-	y = df["target"]
+	X = df.drop(columns=MARKET_DATA_SCHEMA.DROP_COLUMNS_FOR_TRAINING)
+	y = df[MARKET_DATA_SCHEMA.TARGET_COLUMN]
 
 	# Кросс-валидация с Purging
 	tscv = PurgedTimeSeriesSplit(n_splits=n_splits, purge_size=horizon)
@@ -176,7 +180,11 @@ async def train_model(
 	save_dict = {
 		"model": best_model,
 		"scaler": scaler,
-		"features": list(X.columns),
+		"features": [
+			col
+			for col in X.columns
+			if col not in MARKET_DATA_SCHEMA.DROP_COLUMNS_FOR_TRAINING
+		],
 		"metrics": avg_metrics,
 		"ticker_id": str(ticker_id),
 		"timeframe": timeframe,

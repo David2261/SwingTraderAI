@@ -43,8 +43,8 @@ def test_init_calls_super_correctly(mocker):
 def test_fetch_ohlcv_calls_parent_method(bybit_source, mock_ccxt_bybit):
 	"""Проверяем, что fetch_ohlcv вызывает родительский метод ccxt"""
 	mock_data = [
-		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0],
-		[1735693200000, 102.0, 107.0, 99.0, 104.0, 1200.0],
+		[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0, "1h"],
+		[1735693200000, 102.0, 107.0, 99.0, 104.0, 1200.0, "1h"],
 	]
 	mock_ccxt_bybit.fetch_ohlcv.return_value = mock_data
 
@@ -56,7 +56,15 @@ def test_fetch_ohlcv_calls_parent_method(bybit_source, mock_ccxt_bybit):
 
 	assert isinstance(df, pd.DataFrame)
 	assert len(df) == 2
-	assert list(df.columns) == ["timestamp", "open", "high", "low", "close", "volume"]
+	assert list(df.columns) == [
+		"time",
+		"open",
+		"high",
+		"low",
+		"close",
+		"volume",
+		"timeframe",
+	]
 
 
 @pytest.mark.parametrize(
@@ -103,19 +111,27 @@ def test_fetch_ohlcv_handles_empty_response(bybit_source, mock_ccxt_bybit):
 
 def test_fetch_ohlcv_converts_timestamp_correctly(bybit_source, mock_ccxt_bybit):
 	"""Конвертация миллисекунд в datetime"""
-	mock_data = [[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0]]
+	mock_data = [[1735689600000, 100.0, 105.0, 95.0, 102.0, 1000.0, "1h"]]
 	mock_ccxt_bybit.fetch_ohlcv.return_value = mock_data
 
 	df = bybit_source.fetch_ohlcv("BTCUSDT", "1h")
 
 	expected = pd.Timestamp("2025-01-01 00:00:00")
-	assert df["timestamp"].iloc[0] == expected
+	assert df["time"].iloc[0] == expected
 
 
 def test_fetch_ohlcv_preserves_numeric_precision(bybit_source, mock_ccxt_bybit):
 	"""Точность чисел не теряется после конвертации"""
 	mock_data = [
-		[1735689600000, 12345.6789, 12350.1234, 12340.5678, 12348.9012, 9876.54321],
+		[
+			1735689600000,
+			12345.6789,
+			12350.1234,
+			12340.5678,
+			12348.9012,
+			9876.54321,
+			"1h",
+		],
 	]
 	mock_ccxt_bybit.fetch_ohlcv.return_value = mock_data
 

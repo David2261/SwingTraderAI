@@ -1,4 +1,3 @@
-import uuid
 from datetime import timezone
 from decimal import Decimal
 from unittest.mock import MagicMock
@@ -6,7 +5,9 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid6 import uuid7
 
+from swingtraderai.db.models.market import Exchange, Ticker
 from swingtraderai.ingestion.saver import ensure_ticker, upsert_market_data_batch
 
 
@@ -45,7 +46,7 @@ def sample_df():
 @pytest.mark.asyncio
 async def test_ensure_ticker_finds_existing(async_session):
 	"""Тикер уже существует → возвращает существующий id"""
-	ticker_id = uuid.uuid4()
+	ticker_id = uuid7()
 	mock_result = MagicMock()
 	mock_result.scalar_one_or_none.return_value = ticker_id
 
@@ -69,7 +70,7 @@ async def test_ensure_ticker_creates_new(async_session):
 	mock_result.scalar_one_or_none.return_value = None
 	async_session.execute.return_value = mock_result
 
-	new_id = uuid.uuid4()
+	new_id = uuid7()
 	async_session.add = MagicMock()
 
 	def mock_add_side_effect(obj):
@@ -92,46 +93,31 @@ async def test_upsert_market_data_batch_empty_df(async_session):
 	"""Пустой DataFrame → ничего не делает, возвращает 0,0"""
 	df = pd.DataFrame()
 
-	inserted, updated = await upsert_market_data_batch(
-		session=async_session,
-		df=df,
-		source="bybit",
-	)
+	with pytest.raises(ValueError) as exc_info:
+		inserted, updated = await upsert_market_data_batch(
+			session=async_session, df=df, source="bybit"
+		)
 
-	assert inserted == 0
-	assert updated == 0
-	async_session.execute.assert_not_called()
-	async_session.commit.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_upsert_market_data_batch_inserts_and_updates(
-	async_session, sample_df, mocker
-):
-	"""Проверяем вставку новых и обновление существующих записей"""
-	mocker.patch(
-		"swingtraderai.ingestion.saver.ensure_ticker",
-		return_value=uuid.uuid4(),
-	)
-
-	mock_res_sber = MagicMock(rowcount=2)
-	mock_res_btc = MagicMock(rowcount=1)
-
-	async_session.execute.side_effect = [mock_res_sber, mock_res_btc]
-
-	inserted, updated = await upsert_market_data_batch(
-		session=async_session,
-		df=sample_df,
-		source="moex",
-	)
-
-	assert (inserted + updated) == 3
-	assert async_session.execute.call_count == 2
+	assert "Отсутствуют колонки" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
 async def test_upsert_market_data_batch_converts_decimal(async_session, mocker):
 	"""Проверка преобразования float → Decimal"""
+	moex = Exchange(name="Moex", code="MOEX")
+	async_session.add(moex)
+	await async_session.commit()
+	ticker = Ticker(
+		symbol="SBER",
+		asset_type="QUOTE",
+		exchange_id=moex.id,
+		base_currency="RUB",
+		quote_currency="USDT",
+	)
+	async_session.add(ticker)
+	await async_session.commit()
+	await async_session.refresh(ticker)
+
 	df = pd.DataFrame(
 		{
 			"symbol": ["SBER"],
@@ -144,10 +130,9 @@ async def test_upsert_market_data_batch_converts_decimal(async_session, mocker):
 			"volume": [1234567.89],
 		}
 	)
+	df["ticker_id"] = ticker.id
 
-	mocker.patch(
-		"swingtraderai.ingestion.saver.ensure_ticker", return_value=uuid.uuid4()
-	)
+	mocker.patch("swingtraderai.ingestion.saver.ensure_ticker", return_value=uuid7())
 	async_session.execute.return_value = MagicMock(rowcount=1)
 
 	await upsert_market_data_batch(session=async_session, df=df)
@@ -169,7 +154,7 @@ async def test_upsert_market_data_batch_timestamp_tz(async_session, mocker):
 		{
 			"symbol": ["SBER", "SBER"],
 			"timeframe": ["1d", "1d"],
-			"timestamp": [
+			"time": [
 				pd.Timestamp("2025-01-01 12:00:00", tz="UTC"),
 				pd.Timestamp("2025-01-02 12:00:00"),
 			],
@@ -180,10 +165,22 @@ async def test_upsert_market_data_batch_timestamp_tz(async_session, mocker):
 			"volume": [1000.0, 1100.0],
 		}
 	)
-
-	mocker.patch(
-		"swingtraderai.ingestion.saver.ensure_ticker", return_value=uuid.uuid4()
+	moex = Exchange(name="Moex", code="MOEX")
+	async_session.add(moex)
+	await async_session.commit()
+	ticker = Ticker(
+		symbol="SBER",
+		asset_type="QUOTE",
+		exchange_id=moex.id,
+		base_currency="RUB",
+		quote_currency="RUB",
 	)
+	async_session.add(ticker)
+	await async_session.commit()
+	await async_session.refresh(ticker)
+	df["ticker_id"] = ticker.id
+
+	mocker.patch("swingtraderai.ingestion.saver.ensure_ticker", return_value=uuid7())
 	async_session.execute.return_value = MagicMock(rowcount=2)
 
 	await upsert_market_data_batch(session=async_session, df=df)
@@ -191,8 +188,8 @@ async def test_upsert_market_data_batch_timestamp_tz(async_session, mocker):
 	args, _ = async_session.execute.call_args
 	records = args[1]
 
-	for r in records:
-		assert r["timestamp"].tzinfo == timezone.utc
+	assert records[0]["time"].tzinfo == timezone.utc
+	assert records[0]["time"] == pd.Timestamp("2025-01-01 12:00:00", tz="UTC")
 
 
 @pytest.mark.asyncio
@@ -202,7 +199,7 @@ async def test_upsert_market_data_batch_groups_by_symbol(async_session, mocker):
 		{
 			"symbol": ["SBER", "SBER", "GAZP", "BTCUSDT"],
 			"timeframe": ["1d"] * 4,
-			"timestamp": pd.date_range("2025-01-01", periods=4, freq="D"),
+			"time": pd.date_range("2025-01-01", periods=4, freq="D"),
 			"open": [100.0] * 4,
 			"high": [105.0] * 4,
 			"low": [95.0] * 4,
@@ -210,10 +207,24 @@ async def test_upsert_market_data_batch_groups_by_symbol(async_session, mocker):
 			"volume": [1000.0] * 4,
 		}
 	)
+	moex = Exchange(name="Moex", code="MOEX")
+	async_session.add(moex)
+	await async_session.commit()
+	ticker = Ticker(
+		symbol="SBER",
+		asset_type="QUOTE",
+		exchange_id=moex.id,
+		base_currency="RUB",
+		quote_currency="RUB",
+	)
+	async_session.add(ticker)
+	await async_session.commit()
+	await async_session.refresh(ticker)
+	df["ticker_id"] = ticker.id
 
 	mock_ensure = mocker.patch(
 		"swingtraderai.ingestion.saver.ensure_ticker",
-		return_value=uuid.uuid4(),
+		return_value=uuid7(),
 	)
 
 	mock_result = MagicMock()

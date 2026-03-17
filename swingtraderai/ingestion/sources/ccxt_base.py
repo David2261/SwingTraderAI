@@ -4,6 +4,8 @@ from typing import Optional
 import ccxt
 import pandas as pd
 
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
+
 from .base import BaseSource
 
 
@@ -32,7 +34,18 @@ class CcxtSource(BaseSource):
 			return pd.DataFrame()
 
 		df = pd.DataFrame(
-			ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+			ohlcv,
+			columns=[
+				MARKET_DATA_SCHEMA.TIME_COLUMN,
+				*MARKET_DATA_SCHEMA.BASE_COLUMNS[1:],
+			],
 		)
-		df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+		df[MARKET_DATA_SCHEMA.TIME_COLUMN] = pd.to_datetime(
+			df[MARKET_DATA_SCHEMA.TIME_COLUMN], unit="ms"
+		)
+
+		df["timeframe"] = timeframe
+
+		df = MARKET_DATA_SCHEMA.normalize_columns(df)
+		MARKET_DATA_SCHEMA.validate_base_columns(df)
 		return df
