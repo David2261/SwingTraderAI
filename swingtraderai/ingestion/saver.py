@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 from sqlalchemy import select
@@ -12,6 +12,14 @@ from uuid6 import uuid7
 
 from swingtraderai.db.models.market import Exchange, MarketData, Ticker
 from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
+
+
+def _normalize_time(ts: Union[pd.Timestamp, datetime]) -> datetime:
+	if isinstance(ts, pd.Timestamp):
+		ts = ts.to_pydatetime()
+	if ts.tzinfo is None:
+		return ts.replace(tzinfo=timezone.utc)
+	return ts.astimezone(timezone.utc)
 
 
 async def ensure_ticker(
@@ -73,43 +81,38 @@ async def upsert_market_data_batch(
 		if col in df.columns:
 			df[col] = df[col].apply(lambda x: Decimal(str(x)) if pd.notna(x) else None)
 
-	inserted_count = 0
-	updated_count = 0
+	df[MARKET_DATA_SCHEMA.TIME_COLUMN] = df[MARKET_DATA_SCHEMA.TIME_COLUMN].map(
+		_normalize_time
+	)
+	ticker_cache: Dict[str, uuid.UUID] = {}
 
 	for symbol, group_df in df.groupby("symbol", sort=False):
-		ticker_id = await ensure_ticker(
-			session=session,
-			symbol=symbol,
-			asset_type="stock" if source == "moex" else "crypto",
-			exchange_id=current_exchange_id,
-		)
+		if symbol not in ticker_cache:
+			ticker_id = await ensure_ticker(
+				session=session,
+				symbol=symbol,
+				asset_type="stock" if source == "moex" else "crypto",
+				exchange_id=current_exchange_id,
+			)
+			ticker_cache[symbol] = ticker_id
+		ticker_id = ticker_cache[symbol]
 
 		records: List[Dict[str, Any]] = []
 
 		for _, row in group_df.iterrows():
-			timestamp = row[MARKET_DATA_SCHEMA.TIME_COLUMN]
-			if isinstance(timestamp, pd.Timestamp):
-				timestamp = timestamp.to_pydatetime()
-
-			if timestamp.tzinfo is None:
-				timestamp = timestamp.replace(tzinfo=timezone.utc)
-			else:
-				timestamp = timestamp.astimezone(timezone.utc)
-
 			records.append(
 				{
 					**{col: row.get(col) for col in MARKET_DATA_SCHEMA.BASE_COLUMNS},
-					"timestamp": timestamp,
+					"timestamp": row[MARKET_DATA_SCHEMA.TIME_COLUMN],
 					"ticker_id": ticker_id,
 					"timeframe": row.get("timeframe", None),
 					"created_at": datetime.now(timezone.utc),
 					"id": uuid7(),
 				}
 			)
-			inserted_count += len(records)
 
 		if not records:
-			continue
+			return 0, 0
 
 		stmt: Insert = pg_insert(MarketData)
 
@@ -121,11 +124,14 @@ async def upsert_market_data_batch(
 				"low": stmt.excluded.low,
 				"close": stmt.excluded.close,
 				"volume": stmt.excluded.volume,
-				"created_at": stmt.excluded.created_at,
 			},
 		)
 
+		inserted_count = 0
+		updated_count = 0
+
 		result = await session.execute(stmt, records)
+		inserted_count = len(records)
 		affected = getattr(result, "rowcount", 0) or 0
 		updated_count += affected
 

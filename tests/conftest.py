@@ -1,5 +1,6 @@
 import asyncio
 import os
+import warnings
 
 import pytest
 from dotenv import load_dotenv
@@ -14,6 +15,10 @@ from swingtraderai.db.session import get_session
 from swingtraderai.main import app
 
 load_dotenv()
+
+warnings.filterwarnings(
+	"ignore", message=".*rite' option is deprecated.*", category=FutureWarning
+)
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 

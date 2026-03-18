@@ -190,6 +190,7 @@ async def test_upsert_market_data_batch_timestamp_tz(async_session, mocker):
 
 	assert records[0]["time"].tzinfo == timezone.utc
 	assert records[0]["time"] == pd.Timestamp("2025-01-01 12:00:00", tz="UTC")
+	assert records[1]["time"] == pd.Timestamp("2025-01-02 12:00:00", tz="UTC")
 
 
 @pytest.mark.asyncio
