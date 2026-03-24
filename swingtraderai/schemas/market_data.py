@@ -106,7 +106,7 @@ class MarketDataSchema:
 	@property
 	def all_columns(self) -> List[str]:
 		"""Все возможные колонки"""
-		return self.BASE_COLUMNS + list(self.ID_COLUMNS) + ["timeframe", "timestamp"]
+		return self.BASE_COLUMNS + list(self.ID_COLUMNS) + ["timestamp"]
 
 	def get_sql_type(self, column: str) -> str:
 		"""Получить SQL тип для колонки"""

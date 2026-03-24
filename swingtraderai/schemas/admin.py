@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
@@ -45,7 +45,7 @@ class UserBanAction(BaseModel):
 		if self.is_banned:
 			if not self.reason:
 				raise ValueError("reason is required when banning user")
-			if self.banned_until and self.banned_until <= datetime.utcnow():
+			if self.banned_until and self.banned_until <= datetime.now(timezone.utc):
 				raise ValueError("banned_until must be in the future")
 		return self
 
