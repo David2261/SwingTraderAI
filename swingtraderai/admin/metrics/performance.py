@@ -3,12 +3,12 @@ import shutil
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TypeVar, Union, cast
 
-from redis import Redis as SyncRedis
-from redis.asyncio import Redis as AsyncRedis
+import redis
+import redis.asyncio as async_redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-RedisClient = Union[SyncRedis[Any], AsyncRedis[Any]]
+RedisClient = Union[redis.Redis, async_redis.Redis]
 RedisValue = Optional[Union[bytes, str, int, float]]
 
 T = TypeVar("T")
@@ -28,9 +28,7 @@ def get_service_uptime(start_time: datetime) -> Dict[str, float]:
 
 
 async def get_services_health(
-	redis_client: SyncRedis[Any],
-	db_engine: AsyncEngine,
-	celery_app: Optional[Any] = None,
+	redis_client: redis.Redis, db_engine: AsyncEngine, celery_app: Optional[Any] = None
 ) -> Dict[str, str]:
 	"""
 	Простая проверка здоровья ключевых сервисов.
@@ -138,7 +136,7 @@ async def get_table_sizes(db_engine: AsyncEngine) -> Dict[str, Dict[str, float]]
 
 
 async def get_celery_queue_length(
-	redis_client: Union[SyncRedis[Any], AsyncRedis[Any]], queue_name: str = "celery"
+	redis_client: Union[redis.Redis, redis.asyncio.Redis], queue_name: str = "celery"
 ) -> Dict[str, int]:
 	"""
 	Длина очередей Celery (основная + любые custom).
@@ -162,7 +160,7 @@ async def get_celery_queue_length(
 
 
 async def get_api_metrics(
-	redis_client: Union[SyncRedis[Any], AsyncRedis[Any]], hours: int = 24
+	redis_client: Union[redis.Redis, redis.asyncio.Redis], hours: int = 24
 ) -> Dict[str, Any]:
 	"""
 	Агрегированные метрики API за последние N часов.
@@ -249,7 +247,7 @@ async def _get_keys(client: RedisClient, pattern: str) -> List[bytes]:
 
 
 def increment_api_counter(
-	redis_client: SyncRedis[Any],
+	redis_client: redis.Redis,
 	endpoint: str,
 	is_error: bool = False,
 	is_rate_limit: bool = False,

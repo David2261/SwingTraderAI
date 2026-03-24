@@ -9,7 +9,7 @@ from swingtraderai.core.exceptions import InvalidAPIMetricsException
 
 
 class APIMetricsMiddleware(BaseHTTPMiddleware):
-	def __init__(self, app: Any, redis_client: redis.Redis[Any]) -> None:
+	def __init__(self, app: Any, redis_client: redis.Redis) -> None:
 		super().__init__(app)
 		self.redis = redis_client
 

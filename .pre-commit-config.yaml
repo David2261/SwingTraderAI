@@ -23,7 +23,6 @@ repos:
           "sqlalchemy[asyncio]>=2.0.0",
           "alembic",
           "fastapi",
-          "types-redis",
           "types-python-jose",
           "types-passlib",
           "types-python-dateutil",

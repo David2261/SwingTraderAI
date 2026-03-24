@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import List
 
 import redis.asyncio as redis
 
@@ -9,7 +9,7 @@ async def rotate_api_metrics() -> None:
 	"""
 	Ротация метрик API: сохраняет данные за предыдущий период и обнуляет счетчики.
 	"""
-	r: redis.Redis[Any] = redis.Redis.from_url(REDIS_URL)
+	r: redis.Redis = redis.Redis.from_url(REDIS_URL)
 	pipe = r.pipeline()
 
 	total_requests = await r.get("metrics:api:total_requests")

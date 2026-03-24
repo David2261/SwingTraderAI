@@ -173,7 +173,7 @@ async def get_training_statuses(db_engine: AsyncEngine) -> Dict[str, Dict[str, A
 
 
 async def get_prediction_volume(
-	redis_client: redis.Redis[Any], hours: int = 168
+	redis_client: redis.Redis, hours: int = 168
 ) -> Dict[str, Any]:
 	"""
 	Prediction Request Volume (за сутки / неделю)
@@ -316,7 +316,7 @@ async def get_model_performance_metrics(
 
 
 async def get_failed_predictions_rate(
-	redis_client: redis.Redis[Any], days: int = 7
+	redis_client: redis.Redis, days: int = 7
 ) -> Dict[str, float]:
 	"""
 	Failed Predictions / Errors rate (за сутки / неделю)
@@ -336,7 +336,7 @@ async def get_failed_predictions_rate(
 
 
 async def get_all_ai_metrics(
-	db_engine: AsyncEngine, redis_client: redis.Redis[Any]
+	db_engine: AsyncEngine, redis_client: redis.Redis
 ) -> Dict[str, Any]:
 	"""
 	Одна функция, которая возвращает ВСЁ по ИИ-моделям сразу.
