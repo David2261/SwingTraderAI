@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
 
@@ -9,6 +9,25 @@ class BaseAppException(Exception):
 	status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
 	detail: str = "Internal Server Error"
 	headers: Optional[dict[str, str]] = None
+	extra: Optional[Dict[str, Any]] = None
+
+	def __init__(
+		self,
+		detail: Optional[str] = None,
+		status_code: Optional[int] = None,
+		headers: Optional[Dict[str, str]] = None,
+		extra: Optional[Dict[str, Any]] = None,
+	):
+		if detail is not None:
+			self.detail = detail
+		if status_code is not None:
+			self.status_code = status_code
+		if headers is not None:
+			self.headers = headers
+		if extra is not None:
+			self.extra = extra
+
+		super().__init__(self.detail)
 
 
 class AuthException(BaseAppException):
@@ -53,6 +72,11 @@ class ResourceNotFoundException(BaseAppException):
 class InvalidDataException(BaseAppException):
 	status_code = status.HTTP_400_BAD_REQUEST
 	detail = "Invalid data"
+
+
+class InvalidAPIMetricsException(BaseAppException):
+	status_code = status.HTTP_400_BAD_REQUEST
+	detail = "Failed to increment API metrics"
 
 
 def raise_http_exception(exc: BaseAppException) -> None:

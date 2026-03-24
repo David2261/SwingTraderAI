@@ -1,7 +1,7 @@
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -14,6 +14,7 @@ from swingtraderai.schemas.watchlist import (
 	WatchlistDataItem,
 	WatchlistItemCreate,
 	WatchlistItemOut,
+	WatchlistItemUpdate,
 )
 
 router = APIRouter(prefix="/users/me/watchlist", tags=["watchlist"])
@@ -86,6 +87,56 @@ async def get_my_watchlist(
 	)
 	items = result.scalars().all()
 	return [WatchlistItemOut.model_validate(i) for i in items]
+
+
+@router.patch("/items/{item_id}", response_model=WatchlistItemOut)
+async def update_watchlist_item(
+	item_id: int,
+	update_data: WatchlistItemUpdate,
+	current_user: User = Depends(get_current_user),
+	db: AsyncSession = Depends(get_db),
+) -> WatchlistItemOut:
+	"""
+	Частичное обновление элемента в списке наблюдения.
+	Доступно только владельцу списка.
+	Сейчас поддерживается только обновление заметок (notes).
+	"""
+	stmt = select(WatchlistItem).where(WatchlistItem.id == item_id)
+	result = await db.execute(stmt)
+	item = result.scalar_one_or_none()
+
+	if not item:
+		raise HTTPException(
+			status_code=404, detail="Элемент списка наблюдения не найден"
+		)
+
+	owner_stmt = select(Watchlist.owner_id).where(Watchlist.id == item.watchlist_id)
+	owner_result = await db.execute(owner_stmt)
+	owner_id = owner_result.scalar()
+
+	if owner_id != current_user.id:
+		raise HTTPException(
+			status_code=403, detail="Это не ваш элемент списка наблюдения"
+		)
+
+	update_dict = update_data.model_dump(exclude_unset=True)
+	if not update_dict:
+		return WatchlistItemOut.model_validate(item)
+
+	stmt_update = (
+		update(WatchlistItem)
+		.where(WatchlistItem.id == item_id)
+		.values(**update_dict)
+		.returning(WatchlistItem)
+	)
+
+	updated_result = await db.execute(stmt_update)
+	updated_item = updated_result.scalar_one()
+
+	await db.commit()
+	await db.refresh(updated_item)
+
+	return WatchlistItemOut.model_validate(updated_item)
 
 
 @router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)

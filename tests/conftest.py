@@ -1,8 +1,12 @@
 import asyncio
 import os
 import warnings
+from unittest.mock import AsyncMock
 
+import numpy as np
+import pandas as pd
 import pytest
+import redis
 from dotenv import load_dotenv
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -129,3 +133,64 @@ async def ticker(session: AsyncSession):
 	await session.delete(test_ticker)
 	await session.delete(nasdaq)
 	await session.commit()
+
+
+@pytest.fixture
+def registrations() -> pd.Series:
+	"""Серия с датами регистрации пользователей"""
+	n_users = 1000
+	dates = pd.date_range("2025-01-01", periods=90, freq="D")
+	reg_dates = np.random.choice(dates, size=n_users, replace=True)
+	return pd.Series(
+		reg_dates,
+		index=range(n_users),
+		name="registration_date",
+		dtype="datetime64[ns]",
+	)
+
+
+@pytest.fixture
+def activity_df() -> pd.DataFrame:
+	"""Активность пользователей"""
+	dates = pd.date_range("2025-02-01", "2025-03-20", freq="D")
+
+	data = {
+		"user_id": [i % 800 for i in range(5000)],
+		"activity_date": [dates[i % len(dates)] for i in range(5000)],
+	}
+	df = pd.DataFrame(data)
+	df["activity_date"] = pd.to_datetime(df["activity_date"])
+	return df
+
+
+@pytest.fixture
+def registration_dict(activity_df, registrations) -> dict:
+	"""Словарь user_id -> дата регистрации (для cohort retention)"""
+	return registrations.to_dict()
+
+
+@pytest.fixture
+def mock_redis(mocker):
+	redis_mock = mocker.Mock(spec=redis.Redis)
+	redis_mock.ping.return_value = True
+	redis_mock.llen.return_value = 42
+	redis_mock.get.return_value = None
+	redis_mock.keys = AsyncMock(return_value=[])
+	redis_mock.pipeline.return_value = mocker.Mock()
+	return redis_mock
+
+
+@pytest.fixture
+def mock_async_redis(mocker):
+	redis_mock = mocker.Mock(spec=redis.asyncio.Redis)
+	redis_mock.llen = AsyncMock(return_value=7)
+	return redis_mock
+
+
+@pytest.fixture
+def mock_celery(mocker):
+	celery_app = mocker.Mock()
+	inspector = mocker.Mock()
+	inspector.ping.return_value = {"worker1": "pong"}
+	celery_app.control.inspect.return_value = inspector
+	return celery_app

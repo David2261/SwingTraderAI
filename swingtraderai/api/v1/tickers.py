@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -185,3 +185,108 @@ async def bulk_create_tickers(
 	await db.commit()
 
 	return [TickerOut.model_validate(t) for t in created_or_updated]
+
+
+@router.get("/{ticker_id}/indicators")
+async def get_technical_indicators(
+	ticker_id: str,
+	period: str = Query("1h", description="Таймфрейм: 1m, 5m, 15m, 1h, 1d, 1w..."),
+	indicators: str = Query(
+		..., description="Список индикаторов через запятую: rsi,macd,sma20"
+	),
+	db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+	"""
+	Технические индикаторы (SMA, RSI, MACD, Bollinger и т.д.)
+	"""
+	ticker = await db.get(Ticker, ticker_id)
+	if not ticker:
+		raise HTTPException(status_code=404, detail="Ticker not found")
+
+	stmt = (
+		select(MarketData)
+		.where(MarketData.ticker_id == ticker_id)
+		.where(MarketData.timeframe == period)
+		.order_by(MarketData.timestamp.desc())
+		.limit(200)
+	)
+
+	result = await db.execute(stmt)
+	data = result.scalars().all()
+
+	if not data:
+		raise HTTPException(status_code=404, detail="No data found")
+
+	data = sorted(
+		data, key=lambda x: x.timestamp if x.timestamp is not None else datetime.min
+	)
+	prices = [d.close for d in data]
+	_ = prices
+	# Здесь используйте ваши готовые функции для расчета индикаторов
+	# Например:
+	# from swingtraderai.indicators import calculate_rsi, calculate_macd, calculate_sma
+
+	result_indicators: Dict[str, Any] = {}
+	indicators_list = [i.strip().lower() for i in indicators.split(",")]
+
+	for ind in indicators_list:
+		if ind == "rsi":
+			# result_indicators["rsi"] = calculate_rsi(prices)
+			pass
+		elif ind == "macd":
+			# macd, signal, hist = calculate_macd(prices)
+			# result_indicators["macd"] = {
+			# "macd": macd, "signal": signal, "histogram": hist}
+			pass
+		elif ind.startswith("sma"):
+			# period = int(ind[3:])
+			# result_indicators[ind] = calculate_sma(prices, period)
+			pass
+
+	return {
+		"ticker_id": ticker_id,
+		"period": period,
+		"indicators": result_indicators,
+		"timestamp": datetime.utcnow(),
+	}
+
+
+@router.get("/{ticker_id}/signals")
+async def get_trading_signals(
+	ticker_id: str,
+	period: str = Query("1h", description="Таймфрейм для анализа"),
+	db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+	"""
+	Торговые сигналы от ML/AI модели
+	"""
+	ticker = await db.get(Ticker, ticker_id)
+	if not ticker:
+		raise HTTPException(status_code=404, detail="Ticker not found")
+
+	stmt = (
+		select(MarketData)
+		.where(MarketData.ticker_id == ticker_id)
+		.where(MarketData.timeframe == period)
+		.order_by(MarketData.timestamp.desc())
+		.limit(100)
+	)
+
+	result = await db.execute(stmt)
+	data = result.scalars().all()
+
+	if not data:
+		raise HTTPException(status_code=404, detail="No data found")
+
+	# Здесь используйте вашу ML модель для генерации сигналов
+	# Например:
+	# from swingtraderai.ml import predict_signal
+	# signal_result = predict_signal(ticker.symbol, data)
+
+	# Заглушка
+	return {
+		"signal": "buy",
+		"confidence": 0.78,
+		"reason": "Модель обнаружила бычий паттерн на графике",
+		"timestamp": datetime.utcnow(),
+	}

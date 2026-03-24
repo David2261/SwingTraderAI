@@ -39,6 +39,16 @@ class WatchlistItemCreate(WatchlistItemBase):
 	pass
 
 
+class WatchlistItemUpdate(BaseModel):
+	"""Схема для частичного обновления элемента в watchlist"""
+
+	notes: Optional[str] = Field(
+		None, description="Заметки к тикеру в списке наблюдения"
+	)
+
+	model_config = ConfigDict(from_attributes=True)
+
+
 class WatchlistDataItem(BaseModel):
 	item_id: int
 	ticker_id: UUID
