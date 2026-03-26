@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -90,21 +90,24 @@ class PositionOut(BaseModel):
 		if self.current_price is None:
 			return None
 
-		current_val = self.current_value()
+		current_val = self.current_value
 		if current_val is None:
 			return None
 
 		if self.position_type == "long":
-			return current_val - self.total_cost
+			return (self.current_price - self.average_entry_price) * self.quantity
 		else:
-			return self.total_cost - current_val
+			return (self.average_entry_price - self.current_price) * self.quantity
 
 	@computed_field
 	def unrealized_pnl_percent(self) -> Optional[float]:
 		if self.current_price is None or self.total_cost == 0:
 			return None
 
-		pnl = self.unrealized_pnl()
+		if TYPE_CHECKING:
+			pnl = self.unrealized_pnl()
+		else:
+			pnl = self.unrealized_pnl
 		if pnl is None:
 			return None
 
