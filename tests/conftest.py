@@ -17,6 +17,7 @@ from swingtraderai.db.models.market import Exchange, Ticker
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_session
 from swingtraderai.main import app
+from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
 
 load_dotenv()
 
@@ -194,3 +195,37 @@ def mock_celery(mocker):
 	inspector.ping.return_value = {"worker1": "pong"}
 	celery_app.control.inspect.return_value = inspector
 	return celery_app
+
+
+@pytest.fixture
+def sample_ohlcv() -> pd.DataFrame:
+	"""Реалистичный OHLCV DataFrame для тестирования индикаторов и уровней"""
+	np.random.seed(42)
+
+	dates = pd.date_range("2025-03-01 00:00", periods=100, freq="h")
+
+	base = np.linspace(5000, 5100, 100) + np.random.normal(0, 8, 100)
+
+	df = pd.DataFrame(
+		{
+			"time": dates,
+			"open": base + np.random.normal(0, 5, 100),
+			"high": base + np.random.normal(5, 6, 100),
+			"low": base + np.random.normal(-5, 6, 100),
+			"close": base + np.random.normal(0, 4, 100),
+			"volume": np.random.randint(800, 12000, 100),
+			"timeframe": "1h",
+		}
+	)
+
+	df.loc[df.index[10], "high"] = 5080.0
+	df.loc[df.index[15], "high"] = 5125.0
+	df.loc[df.index[30], "low"] = 4960.0
+	df.loc[df.index[50], "high"] = 5150.0
+	df.loc[df.index[70], "low"] = 4925.0
+	df.loc[df.index[85], "low"] = 4900.0
+
+	df = MARKET_DATA_SCHEMA.normalize_columns(df)
+	df["time"] = pd.to_datetime(df["time"])
+
+	return df

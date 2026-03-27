@@ -4,7 +4,9 @@ import pandas as pd
 from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
 
 
-def detect_fractal_highs_lows(df: pd.DataFrame, window: int = 2) -> pd.DataFrame:
+def detect_fractal_highs_lows(
+	df: pd.DataFrame, window: int = 2
+) -> tuple[pd.Series, pd.Series]:
 	"""
 	Находит fractal highs (локальные максимумы) и fractal lows (локальные минимумы).
 	Классический Bill Williams fractal: бар выше/ниже соседних баров слева и справа.
@@ -19,18 +21,15 @@ def detect_fractal_highs_lows(df: pd.DataFrame, window: int = 2) -> pd.DataFrame
 	high = df[MARKET_DATA_SCHEMA.HIGH_COLUMN]
 	low = df[MARKET_DATA_SCHEMA.LOW_COLUMN]
 
-	is_high = pd.Series(True, index=df.index)
-	is_low = pd.Series(True, index=df.index)
+	is_fractal_high = (
+		high == high.rolling(window * 2 + 1, center=True, min_periods=window + 1).max()
+	)
 
-	for i in range(1, window + 1):
-		is_high &= (high.shift(window) > high.shift(window + i)) & (
-			high.shift(window) > high.shift(window - i)
-		)
-		is_low &= (low.shift(window) < low.shift(window + i)) & (
-			low.shift(window) < low.shift(window - i)
-		)
+	is_fractal_low = (
+		low == low.rolling(window * 2 + 1, center=True, min_periods=window + 1).min()
+	)
 
-	return high.where(is_high), low.where(is_low)
+	return high.where(is_fractal_high), low.where(is_fractal_low)
 
 
 def rolling_support_resistance_zones(
@@ -40,44 +39,63 @@ def rolling_support_resistance_zones(
 	price_tolerance: float = 0.003,
 ) -> pd.DataFrame:
 	"""
-	Простой rolling-алгоритм поиска уровней по количеству касаний.
+	Rolling поиск горизонтальных уровней поддержки и сопротивления
+	по количеству касаний (low для support, high для resistance).
 	"""
 	supports = []
 	resistances = []
 	touches_s = []
 	touches_r = []
 
+	price_col_low = MARKET_DATA_SCHEMA.LOW_COLUMN
+	price_col_high = MARKET_DATA_SCHEMA.HIGH_COLUMN
+
 	for i in range(window, len(df)):
 		window_df = df.iloc[i - window : i]
 
-		lows = window_df[MARKET_DATA_SCHEMA.LOW_COLUMN]
-		unique_lows, counts_low = np.unique(
-			np.round(lows / (lows.mean() * price_tolerance))
-			* (lows.mean() * price_tolerance),
-			return_counts=True,
-		)
-
-		strong_supports = unique_lows[counts_low >= min_touches]
-		if len(strong_supports) > 0:
-			supports.append(strong_supports[-1])
-		else:
+		lows = window_df[price_col_low]
+		if len(lows) < min_touches:
 			supports.append(np.nan)
-
-		highs = window_df[MARKET_DATA_SCHEMA.HIGH_COLUMN]
-		unique_highs, counts_high = np.unique(
-			np.round(highs / (highs.mean() * price_tolerance))
-			* (highs.mean() * price_tolerance),
-			return_counts=True,
-		)
-
-		strong_res = unique_highs[counts_high >= min_touches]
-		if len(strong_res) > 0:
-			resistances.append(strong_res[-1])
+			touches_s.append(0)
 		else:
-			resistances.append(np.nan)
+			ref_price = lows.median()
+			bin_size = ref_price * price_tolerance
+			rounded_lows = np.round(lows / bin_size) * bin_size
 
-		touches_s.append(max(counts_low) if len(counts_low) > 0 else 0)
-		touches_r.append(max(counts_high) if len(counts_high) > 0 else 0)
+			unique_lows, counts_low = np.unique(rounded_lows, return_counts=True)
+			strong_mask = counts_low >= min_touches
+			strong_supports = unique_lows[strong_mask]
+			strong_counts = counts_low[strong_mask]
+
+			if len(strong_supports) > 0:
+				best_idx = np.argmax(strong_counts)
+				supports.append(strong_supports[best_idx])
+				touches_s.append(strong_counts[best_idx])
+			else:
+				supports.append(np.nan)
+				touches_s.append(0)
+
+		highs = window_df[price_col_high]
+		if len(highs) < min_touches:
+			resistances.append(np.nan)
+			touches_r.append(0)
+		else:
+			ref_price = highs.median()
+			bin_size = ref_price * price_tolerance
+			rounded_highs = np.round(highs / bin_size) * bin_size
+
+			unique_highs, counts_high = np.unique(rounded_highs, return_counts=True)
+			strong_mask = counts_high >= min_touches
+			strong_res = unique_highs[strong_mask]
+			strong_counts = counts_high[strong_mask]
+
+			if len(strong_res) > 0:
+				best_idx = np.argmax(strong_counts)
+				resistances.append(strong_res[best_idx])
+				touches_r.append(strong_counts[best_idx])
+			else:
+				resistances.append(np.nan)
+				touches_r.append(0)
 
 	result = pd.DataFrame(
 		{
@@ -98,23 +116,41 @@ def calculate_classic_pivot_points(
 	"""
 	Классические дневные/недельные Pivot Points
 	"""
+	df = MARKET_DATA_SCHEMA.normalize_columns(df)
+	MARKET_DATA_SCHEMA.validate_base_columns(df)
+
+	temp_df = df.copy()
+
+	if "time" in temp_df.columns:
+		temp_df = temp_df.set_index("time")
+
 	high = MARKET_DATA_SCHEMA.HIGH_COLUMN
 	low = MARKET_DATA_SCHEMA.LOW_COLUMN
 	close = MARKET_DATA_SCHEMA.CLOSE_COLUMN
+
 	resampled = (
-		df.resample(timeframe).agg({high: "max", low: "min", close: "last"}).shift(1)
+		temp_df.resample(timeframe)
+		.agg({high: "max", low: "min", close: "last"})
+		.shift(1)
 	)
 
 	pp = (resampled[high] + resampled[low] + resampled[close]) / 3
 
-	data = pd.DataFrame(index=resampled.index)
-	data["pp"] = pp
-	data["r1"] = 2 * pp - resampled[low]
-	data["s1"] = 2 * pp - resampled[high]
-	data["r2"] = pp + (resampled[high] - resampled[low])
-	data["s2"] = pp - (resampled[high] - resampled[low])
+	data = pd.DataFrame(
+		{
+			"pp": pp,
+			"r1": 2 * pp - resampled[low],
+			"s1": 2 * pp - resampled[high],
+			"r2": pp + (resampled[high] - resampled[low]),
+			"s2": pp - (resampled[high] - resampled[low]),
+		},
+		index=resampled.index,
+	)
 
-	return data.reindex(df.index, method="ffill")
+	if "time" in df.columns:
+		return data.reindex(df["time"], method="ffill")
+	else:
+		return data.reindex(df.index, method="ffill")
 
 
 def add_key_levels_indicators(
