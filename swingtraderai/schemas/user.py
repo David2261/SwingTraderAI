@@ -90,10 +90,6 @@ class PositionOut(BaseModel):
 		if self.current_price is None:
 			return None
 
-		current_val = self.current_value
-		if current_val is None:
-			return None
-
 		if self.position_type == "long":
 			return (self.current_price - self.average_entry_price) * self.quantity
 		else:

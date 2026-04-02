@@ -45,13 +45,13 @@ class APIMetricsMiddleware(BaseHTTPMiddleware):
 
 			try:
 				pipe = self.redis.pipeline()
-				pipe.incr("metrics:api:total_requests")
-				pipe.incr(f"metrics:api:endpoint:{endpoint}:requests")
+				await pipe.incr("metrics:api:total_requests")
+				await pipe.incr(f"metrics:api:endpoint:{endpoint}:requests")
 
 				if is_error:
-					pipe.incr(f"metrics:api:endpoint:{endpoint}:errors")
+					await pipe.incr(f"metrics:api:endpoint:{endpoint}:errors")
 				if is_rate_limit:
-					pipe.incr("metrics:api:rate_limit_hits")
+					await pipe.incr("metrics:api:rate_limit_hits")
 
 				await pipe.execute()
 			except Exception as e:

@@ -85,6 +85,8 @@ async def upsert_market_data_batch(
 		_normalize_time
 	)
 	ticker_cache: Dict[str, uuid.UUID] = {}
+	total_inserted = 0
+	total_updated = 0
 
 	for symbol, group_df in df.groupby("symbol", sort=False):
 		if symbol not in ticker_cache:
@@ -127,17 +129,12 @@ async def upsert_market_data_batch(
 			},
 		)
 
-		inserted_count = 0
-		updated_count = 0
-
 		result = await session.execute(stmt, records)
-		inserted_count = len(records)
-		affected = getattr(result, "rowcount", 0) or 0
-		updated_count += affected
-
-	inserted_count = inserted_count - updated_count
+		rowcount = getattr(result, "rowcount", 0)
+		total_updated += rowcount
+		total_inserted += len(records) - rowcount
 
 	await session.flush()
 	await session.commit()
 
-	return inserted_count, updated_count
+	return total_inserted, total_updated

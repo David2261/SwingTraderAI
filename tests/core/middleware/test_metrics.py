@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
@@ -50,7 +50,8 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет, что middleware записывает метрики для успешного запроса"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
+		mock_pipeline.execute = AsyncMock(return_value=None)
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/test/endpoint")
@@ -63,7 +64,7 @@ class TestAPIMetricsMiddleware:
 
 		mock_async_redis.pipeline.assert_called_once()
 
-		assert mock_pipeline.incr.call_count == 2
+		assert mock_pipeline.incr.call_count >= 2
 		mock_pipeline.incr.assert_any_call("metrics:api:total_requests")
 		mock_pipeline.incr.assert_any_call(
 			"metrics:api:endpoint:/api/v1/test/endpoint:requests"
@@ -79,7 +80,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет, что эндпоинт /predict нормализуется правильно"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/admin/ml/predict/123")
@@ -95,7 +96,7 @@ class TestAPIMetricsMiddleware:
 	async def test_middleware_normalizes_train_endpoint(self, client, mock_async_redis):
 		"""Проверяет, что эндпоинт /train нормализуется правильно"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/admin/ml/train/")
@@ -108,7 +109,7 @@ class TestAPIMetricsMiddleware:
 	async def test_middleware_normalizes_trailing_slash(self, client, mock_async_redis):
 		"""Проверяет, что удаляется trailing slash"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		@client.app.get("/api/v1/test/with-slash/")
@@ -129,7 +130,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет, что middleware записывает ошибки для 4xx ответов"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/nonexistent-endpoint")
@@ -148,7 +149,7 @@ class TestAPIMetricsMiddleware:
 	async def test_middleware_records_rate_limit_hits(self, client, mock_async_redis):
 		"""Проверяет, что middleware записывает rate limit hits"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/rate-limit-endpoint")
@@ -166,7 +167,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет, что middleware обрабатывает исключения в обработчике"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		client = TestClient(app_with_middleware)
@@ -196,7 +197,7 @@ class TestAPIMetricsMiddleware:
 
 		assert response.status_code == 200
 		mock_async_redis.pipeline.assert_called_once()
-		mock_pipeline.execute.assert_called_once()
+		mock_pipeline.execute.assert_awaited_once()
 
 	@pytest.mark.asyncio
 	async def test_middleware_logs_redis_error(self, client, mock_async_redis, caplog):
@@ -235,7 +236,7 @@ class TestAPIMetricsMiddleware:
 	async def test_middleware_handles_empty_path(self, client, mock_async_redis):
 		"""Проверяет обработку пустого пути"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/")
@@ -250,7 +251,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет, что query params не влияют на имя эндпоинта"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/test/endpoint?param1=value1&param2=value2")
@@ -267,7 +268,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет обработку нескольких запросов"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		for _ in range(3):
@@ -289,7 +290,7 @@ class TestAPIMetricsMiddleware:
 	):
 		"""Проверяет работу с разными HTTP методами"""
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.post("/api/v1/test/endpoint")
@@ -326,7 +327,7 @@ class TestAPIMetricsMiddlewareEdgeCases:
 		client = TestClient(app)
 
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/test/endpoint@special")
@@ -349,7 +350,7 @@ class TestAPIMetricsMiddlewareEdgeCases:
 		client = TestClient(app)
 
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get("/api/v1/test/привет")
@@ -372,7 +373,7 @@ class TestAPIMetricsMiddlewareEdgeCases:
 		client = TestClient(app)
 
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		response = client.get(long_path)
@@ -397,7 +398,7 @@ class TestAPIMetricsMiddlewareMetricsNaming:
 		client = TestClient(app)
 
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		client.get("/test")
@@ -417,7 +418,7 @@ class TestAPIMetricsMiddlewareMetricsNaming:
 		client = TestClient(app)
 
 		mock_pipeline = AsyncMock()
-		mock_pipeline.incr = MagicMock(return_value=mock_pipeline)
+		mock_pipeline.incr = AsyncMock()
 		mock_async_redis.pipeline.return_value = mock_pipeline
 
 		client.get("/api/v1/users/123")

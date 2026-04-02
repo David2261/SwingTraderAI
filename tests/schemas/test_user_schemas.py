@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import PropertyMock, patch
 from uuid import UUID
 
 import pytest
@@ -232,3 +233,23 @@ def test_position_out_computed_fields_are_in_model_dump():
 	assert "unrealized_pnl_percent" in data
 	assert data["current_value"] == 1350.0
 	assert data["unrealized_pnl"] == 150.0
+
+
+def test_unrealized_pnl_percent_pnl_none():
+	"""Проверяем ветку, где unrealized_pnl внезапно возвращает None"""
+	pos = PositionOut(
+		id=1,
+		ticker_id=uuid7(),
+		symbol="AAPL",
+		position_type="long",
+		quantity=10,
+		average_entry_price=100,
+		total_cost=1000,
+		current_price=150,
+		opened_at=datetime.now(),
+	)
+
+	with patch.object(PositionOut, "unrealized_pnl", new_callable=PropertyMock) as mock:
+		mock.return_value = None
+
+		assert pos.unrealized_pnl_percent is None

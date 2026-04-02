@@ -70,6 +70,11 @@ pytest-mock = "^3.15.1"
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.coverage.report]
+exclude_lines = [
+	"if TYPE_CHECKING:"
+]
+
 [tool.black]
 line-length = 88
 target-version = ['py312']
@@ -144,6 +149,7 @@ markers = [
 filterwarnings = [
 	"ignore::DeprecationWarning:sqlalchemy",
 	"ignore:'crypt' is deprecated:DeprecationWarning",
+	"ignore::UserWarning:pandas_ta.*",
 ]
 
 norecursedirs = [
