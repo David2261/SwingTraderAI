@@ -16,13 +16,14 @@ from sqlalchemy import (
 	Numeric,
 	String,
 	Text,
+	UniqueConstraint,
 	func,
 	text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
-from swingtraderai.db.base import Base
+from swingtraderai.db.base import TenantBase
 from swingtraderai.db.models.market import Ticker
 
 
@@ -33,7 +34,7 @@ class UserRole(str, PyEnum):
 	ADMIN = "admin"
 
 
-class User(Base):
+class User(TenantBase):
 	__tablename__ = "users"
 
 	id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
@@ -110,10 +111,13 @@ class User(Base):
 	__table_args__ = (
 		Index("ix_users_role", "role"),
 		Index("ix_users_is_banned", "is_banned"),
+		UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
+		UniqueConstraint("tenant_id", "username", name="uq_users_tenant_username"),
+		UniqueConstraint("tenant_id", "telegram_id", name="uq_users_tenant_telegram"),
 	)
 
 
-class Position(Base):
+class Position(TenantBase):
 	__tablename__ = "positions"
 
 	id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid7)
@@ -154,9 +158,11 @@ class Position(Base):
 		CheckConstraint(
 			"position_type IN ('long', 'short')", name="valid_position_type"
 		),
-		Index("ix_positions_user_ticker_type", "user_id", "ticker_id", "position_type"),
+		Index("ix_positions_tenant_user_ticker", "tenant_id", "user_id", "ticker_id"),
+		Index("ix_positions_tenant_user_type", "tenant_id", "user_id", "position_type"),
 		Index(
-			"uq_active_position_per_user_ticker_type",
+			"uq_active_position_per_tenant_user_ticker_type",
+			"tenant_id",
 			"user_id",
 			"ticker_id",
 			"position_type",

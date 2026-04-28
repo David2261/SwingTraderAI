@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from swingtraderai.db.models.analysis import Analysis, Signal
 from swingtraderai.db.models.market import Ticker
 from swingtraderai.db.models.system import Notification, Watchlist, WatchlistItem
+from swingtraderai.db.models.user import User
 
 
 @pytest.mark.asyncio
@@ -94,15 +95,24 @@ async def test_foreign_key_violation_notification(session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_watchlist_and_items_cascade(session: AsyncSession):
-	watchlist = Watchlist(name="My Watchlist", owner_id=uuid.uuid4(), items=[])
-	session.add(watchlist)
+	user = User(
+		username="watchlist_user2",
+		email="watchlist2@example.com",
+		password_hash="hash456",
+	)
+	session.add(user)
 	await session.commit()
-	await session.refresh(watchlist)
+	await session.refresh(user)
 
 	t1 = Ticker(symbol="BTCUSDT", asset_type="CRYPTO")
 	t2 = Ticker(symbol="ETHUSDT", asset_type="CRYPTO")
 	session.add_all([t1, t2])
 	await session.commit()
+
+	watchlist = Watchlist(name="My Watchlist", owner_id=user.id, items=[])
+	session.add(watchlist)
+	await session.commit()
+	await session.refresh(watchlist)
 
 	item1 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=t1.id)
 	item2 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=t2.id)
@@ -128,15 +138,27 @@ async def test_watchlist_and_items_cascade(session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_watchlist_item_relationship(session: AsyncSession):
-	wl = Watchlist(name="Test List")
-	session.add(wl)
+	user = User(
+		username="watchlist_user2",
+		email="watchlist2@example.com",
+		password_hash="hash456",
+	)
+	session.add(user)
 	await session.commit()
-	await session.refresh(wl)
+	await session.refresh(user)
 
 	tk = Ticker(symbol="SOLUSDT", asset_type="CRYPTO")
 	session.add(tk)
 	await session.commit()
 	await session.refresh(tk)
+
+	wl = Watchlist(
+		name="My Watchlist",
+		owner_id=user.id,
+	)
+	session.add(wl)
+	await session.commit()
+	await session.refresh(wl)
 
 	item = WatchlistItem(watchlist_id=wl.id, ticker_id=tk.id)
 	session.add(item)
@@ -166,15 +188,27 @@ async def test_watchlist_item_unique_per_watchlist_not_enforced(session: AsyncSe
 	(один тикер может быть добавлен в watchlist несколько раз)
 	Если это нежелательно — нужно добавить UniqueConstraint
 	"""
-	watchlist = Watchlist(name="Duplicates Test")
-	session.add(watchlist)
+	user = User(
+		username="watchlist_user2",
+		email="watchlist2@example.com",
+		password_hash="hash456",
+	)
+	session.add(user)
 	await session.commit()
-	await session.refresh(watchlist)
+	await session.refresh(user)
 
 	ticker = Ticker(symbol="XLMUSDT", asset_type="CRYPTO")
 	session.add(ticker)
 	await session.commit()
 	await session.refresh(ticker)
+
+	watchlist = Watchlist(
+		name="My Watchlist",
+		owner_id=user.id,
+	)
+	session.add(watchlist)
+	await session.commit()
+	await session.refresh(watchlist)
 
 	item1 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=ticker.id)
 	item2 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=ticker.id)

@@ -24,7 +24,7 @@ dependencies = [
 	"yfinance>=0.2.40",
 	"ccxt>=4.3.0",
 	"pandas>=2.2.0",
-	"pandas-ta>=0.3.14b0",
+	"pandas-ta (>=0.4.71b0,<0.5.0)",
 	"numpy>=2.0.0",
 
 	"apscheduler>=3.10.0",
@@ -150,6 +150,7 @@ filterwarnings = [
 	"ignore::DeprecationWarning:sqlalchemy",
 	"ignore:'crypt' is deprecated:DeprecationWarning",
 	"ignore::UserWarning:pandas_ta.*",
+	"ignore:.*mode.copy_on_write.*:pandas.errors.Pandas4Warning",
 ]
 
 norecursedirs = [

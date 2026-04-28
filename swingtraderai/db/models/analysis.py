@@ -6,15 +6,16 @@ from typing import Optional
 from sqlalchemy import TIMESTAMP, Float, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, NUMERIC, UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from uuid6 import uuid7
 
-from swingtraderai.db.base import Base
+from swingtraderai.db.base import TenantBase
 
 
-class Analysis(Base):
+class Analysis(TenantBase):
 	__tablename__ = "analyses"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	ticker_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("tickers.id")
@@ -30,14 +31,16 @@ class Analysis(Base):
 		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
 	)
 
-	__table_args__ = (Index("idx_analyses", "ticker_id", "created_at"),)
+	__table_args__ = (
+		Index("idx_analyses_tenant_ticker", "tenant_id", "ticker_id", "created_at"),
+	)
 
 
-class Signal(Base):
+class Signal(TenantBase):
 	__tablename__ = "signals"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	analysis_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("analyses.id")
@@ -57,6 +60,6 @@ class Signal(Base):
 	)
 
 	__table_args__ = (
-		Index("idx_signals_ticker", "ticker_id", "created_at"),
-		Index("idx_signals_status", "status"),
+		Index("idx_signals_tenant_ticker", "tenant_id", "ticker_id", "created_at"),
+		Index("idx_signals_tenant_status", "tenant_id", "status"),
 	)

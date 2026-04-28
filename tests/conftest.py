@@ -42,12 +42,10 @@ async def engine():
 	engine = create_async_engine(TEST_DATABASE_URL, future=True)
 
 	async with engine.begin() as conn:
+		await conn.run_sync(Base.metadata.drop_all)
 		await conn.run_sync(Base.metadata.create_all)
 
 	yield engine
-
-	async with engine.begin() as conn:
-		await conn.run_sync(Base.metadata.drop_all)
 
 	await engine.dispose()
 
@@ -55,13 +53,11 @@ async def engine():
 # Фабрика сессий
 @pytest.fixture
 async def session(engine):
-	async_session = sessionmaker(
-		engine, class_=AsyncSession, expire_on_commit=False, autoflush=False
-	)
+	async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-	async with async_session() as session:
-		yield session
-		await session.rollback()
+	async with engine.connect() as conn:
+		async with async_session(bind=conn) as session:
+			yield session
 
 
 # Подмена зависимости FastAPI
@@ -78,18 +74,6 @@ async def client(session):
 	app.dependency_overrides.clear()
 
 
-@pytest.fixture(scope="session")
-async def check_db_connection():
-	if not TEST_DATABASE_URL:
-		pytest.skip("TEST_DATABASE_URL not set")
-	engine = create_async_engine(TEST_DATABASE_URL)
-	try:
-		async with engine.connect() as conn:
-			await conn.execute("SELECT 1")
-	finally:
-		await engine.dispose()
-
-
 @pytest.fixture
 async def user(session: AsyncSession):
 	"""Создает тестового пользователя и возвращает его"""
@@ -104,9 +88,6 @@ async def user(session: AsyncSession):
 	await session.refresh(user)
 
 	yield user
-
-	await session.delete(user)
-	await session.commit()
 
 
 @pytest.fixture
@@ -133,7 +114,7 @@ async def ticker(session: AsyncSession):
 
 	await session.delete(test_ticker)
 	await session.delete(nasdaq)
-	await session.commit()
+	await session.flush()
 
 
 @pytest.fixture

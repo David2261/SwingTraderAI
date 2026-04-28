@@ -4,16 +4,17 @@ from datetime import datetime, timezone
 from sqlalchemy import TIMESTAMP, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from uuid6 import uuid7
 
-from swingtraderai.db.base import Base
+from swingtraderai.db.base import TenantBase
 from swingtraderai.db.models.market import Ticker
 
 
-class Notification(Base):
+class Notification(TenantBase):
 	__tablename__ = "notifications"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	signal_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("signals.id")
@@ -26,14 +27,14 @@ class Notification(Base):
 	)
 
 
-class Watchlist(Base):
+class Watchlist(TenantBase):
 	__tablename__ = "watchlists"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	name: Mapped[str | None] = mapped_column(String(50))
-	owner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+	owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
 	created_at: Mapped[datetime] = mapped_column(
 		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
 	)
@@ -44,11 +45,11 @@ class Watchlist(Base):
 	)
 
 
-class WatchlistItem(Base):
+class WatchlistItem(TenantBase):
 	__tablename__ = "watchlist_items"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	watchlist_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("watchlists.id")

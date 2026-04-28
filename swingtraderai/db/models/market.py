@@ -7,6 +7,7 @@ from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Index, String, UniqueCons
 from sqlalchemy.dialects.postgresql import NUMERIC, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+from uuid6 import uuid7
 
 from swingtraderai.db.base import Base
 
@@ -15,7 +16,7 @@ class Ticker(Base):
 	__tablename__ = "tickers"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	symbol: Mapped[str] = mapped_column(String(20), nullable=False)
 	asset_type: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -41,7 +42,7 @@ class MarketData(Base):
 	__tablename__ = "market_data"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	ticker_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("tickers.id")
@@ -84,7 +85,7 @@ class Exchange(Base):
 	__tablename__ = "exchanges"
 
 	id: Mapped[uuid.UUID] = mapped_column(
-		UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
 	name: Mapped[str] = mapped_column(
 		String(50), unique=True, nullable=False, index=True
