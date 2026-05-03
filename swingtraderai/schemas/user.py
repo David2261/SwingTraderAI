@@ -9,7 +9,6 @@ from .auth import UserOut
 
 class WatchlistItem(BaseModel):
 	ticker_id: UUID
-	symbol_id: int
 	symbol: str
 	added_at: datetime
 
@@ -65,7 +64,7 @@ class PositionUpdate(BaseModel):
 
 
 class PositionOut(BaseModel):
-	id: int
+	id: UUID
 	ticker_id: UUID
 	symbol: str
 	position_type: Literal["long", "short"]

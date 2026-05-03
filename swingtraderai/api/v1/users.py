@@ -7,9 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from swingtraderai.api.deps import get_current_user
+from swingtraderai.api.services.position_service import PositionService
+from swingtraderai.api.services.user_service import UserService
+from swingtraderai.core.tenant import get_current_tenant_id
 from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.system import Watchlist, WatchlistItem
-from swingtraderai.db.models.user import Position, User
+from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.auth import UserOut
 from swingtraderai.schemas.user import (
@@ -23,25 +26,38 @@ from swingtraderai.schemas.user import (
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+	return UserService(db)
+
+
+def get_position_service(db: AsyncSession = Depends(get_db)) -> PositionService:
+	return PositionService(db)
+
+
 @router.get("/me", response_model=UserOut)
-async def read_users_me(current_user: User = Depends(get_current_user)) -> UserOut:
+async def read_users_me(
+	current_user: User = Depends(get_current_user),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	user_service: UserService = Depends(get_user_service),
+) -> UserOut:
 	"""
 	Получение информации о текущем авторизованном пользователе.
 	"""
-	return UserOut.from_orm(current_user)
+	return UserOut.model_validate(current_user)
 
 
 @router.get("/{user_id}", response_model=UserOut)
 async def read_user(
 	user_id: UUID,
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	user_service: UserService = Depends(get_user_service),
 	current_user: User = Depends(get_current_user),
 ) -> UserOut:
 	"""
 	Получение информации о пользователе по его ID.
 	Доступно только авторизованным пользователям.
 	"""
-	user = await db.get(User, user_id)
+	user = await user_service.get_user_by_id(tenant_id, user_id)
 	if not user:
 		raise HTTPException(status_code=404, detail="User not found")
 	return UserOut.model_validate(user)
@@ -50,6 +66,8 @@ async def read_user(
 @router.get("/me/portfolio", response_model=PortfolioSummary)
 async def get_my_portfolio_summary(
 	current_user: User = Depends(get_current_user),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	# Пока оставляем прямой запрос (сложный CTE), позже вынесем в PortfolioService
 	db: AsyncSession = Depends(get_db),
 ) -> PortfolioSummary:
 	"""
@@ -152,9 +170,10 @@ async def get_my_portfolio_summary(
 	status_code=status.HTTP_201_CREATED,
 )
 async def add_position(
-	position_in: PositionCreate,
+	position_data: PositionCreate,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	position_service: PositionService = Depends(get_position_service),
 ) -> PositionOut:
 	"""
 	Добавление новой позиции в портфель пользователя.
@@ -163,83 +182,29 @@ async def add_position(
 	- Отсутствие активной позиции по тому же тикеру и типу
 	Рассчитывает общую стоимость позиции с учетом типа (long/short).
 	"""
-	ticker = await db.get(Ticker, position_in.ticker_id)
-	if not ticker:
-		raise HTTPException(status_code=404, detail="Ticker not found")
-
-	existing = await db.execute(
-		select(Position).where(
-			Position.user_id == current_user.id,
-			Position.ticker_id == position_in.ticker_id,
-			Position.position_type == position_in.position_type,
-			Position.closed_at.is_(None),
-		)
-	)
-	if existing.scalar_one_or_none():
-		raise HTTPException(
-			status_code=400,
-			detail=f"Active {position_in.position_type} \
-				position for this ticker already exists",
-		)
-
-	total_cost = position_in.quantity * position_in.average_entry_price
-	if position_in.position_type == "short":
-		total_cost = -total_cost
-
-	position = Position(
+	position = await position_service.add_position(
+		tenant_id=tenant_id,
 		user_id=current_user.id,
-		ticker_id=position_in.ticker_id,
-		position_type=position_in.position_type,
-		quantity=position_in.quantity,
-		average_entry_price=position_in.average_entry_price,
-		total_cost=total_cost,
-		notes=position_in.notes,
+		position_in=position_data,
 	)
-
-	db.add(position)
-	await db.commit()
-	await db.refresh(position)
-
 	return PositionOut.model_validate(position)
 
 
 @router.put("/me/portfolio/positions/{position_id}", response_model=PositionOut)
 async def update_position(
-	position_id: int,
+	position_id: UUID,
 	position_update: PositionUpdate,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	position_service: PositionService = Depends(get_position_service),
 ) -> PositionOut:
-	"""
-	Обновление существующей позиции.
-	Проверяет права доступа и статус позиции (не закрыта).
-	При изменении количества или цены пересчитывает общую стоимость.
-	"""
-	position = await db.get(Position, position_id)
-	if not position:
-		raise HTTPException(status_code=404, detail="Position not found")
-
-	if position.user_id != current_user.id:
-		raise HTTPException(status_code=403, detail="Not your position")
-
-	if position.closed_at:
-		raise HTTPException(status_code=400, detail="Position already closed")
-
-	update_data = position_update.model_dump(exclude_unset=True)
-	if "quantity" in update_data or "average_buy_price" in update_data:
-		new_quantity = update_data.get("quantity", position.quantity)
-		new_price = update_data.get("average_buy_price", position.average_buy_price)
-		total_cost = new_quantity * new_price
-		if position.position_type == "short":
-			total_cost = -total_cost
-		update_data["total_cost"] = total_cost
-
-	for key, value in update_data.items():
-		setattr(position, key, value)
-
-	await db.commit()
-	await db.refresh(position)
-
+	"""Обновление позиции"""
+	position = await position_service.update_position(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		position_id=position_id,
+		position_update=position_update,
+	)
 	return PositionOut.model_validate(position)
 
 
@@ -247,21 +212,20 @@ async def update_position(
 	"/me/portfolio/positions/{position_id}", status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_position(
-	position_id: int,
+	position_id: UUID,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	position_service: PositionService = Depends(get_position_service),
 ) -> None:
 	"""
 	Удаление (закрытие) позиции.
 	Физически удаляет позицию из БД.
 	Проверяет права доступа и существование позиции.
 	"""
-	position = await db.get(Position, position_id)
-	if not position:
+	success = await position_service.delete_position(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		position_id=position_id,
+	)
+	if not success:
 		raise HTTPException(status_code=404, detail="Position not found")
-
-	if position.user_id != current_user.id:
-		raise HTTPException(status_code=403, detail="Not your position")
-
-	await db.delete(position)
-	await db.commit()

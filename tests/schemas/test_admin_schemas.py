@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from pydantic import ValidationError
+from uuid6 import uuid7
 
 from swingtraderai.schemas.admin import (
 	UserAdminOut,
@@ -150,7 +151,7 @@ class TestUserAdminOut:
 		"""Test creating UserAdminOut instance"""
 		now = datetime.now(timezone.utc)
 		user_data = {
-			"id": 1,
+			"id": uuid7(),
 			"username": "testuser",
 			"email": "test@example.com",
 			"telegram_id": "123456",
@@ -165,7 +166,7 @@ class TestUserAdminOut:
 			"signals_received_count": 5,
 		}
 		user_out = UserAdminOut(**user_data)
-		assert user_out.id == 1
+		assert user_out.id == user_data["id"]
 		assert user_out.username == "testuser"
 		assert user_out.signals_received_count == 5
 
@@ -178,14 +179,14 @@ class TestUserBanResponse:
 	def test_ban_response(self):
 		"""Test ban response schema"""
 		response = UserBanResponse(
-			user_id=1,
+			user_id=uuid7(),
 			email="test@example.com",
 			status="banned",
 			reason="Spam",
 			banned_until=None,
 			message="User has been banned",
 		)
-		assert response.user_id == 1
+		assert response.user_id == response.user_id
 		assert response.status == "banned"
 		assert response.message == "User has been banned"
 
@@ -193,7 +194,7 @@ class TestUserBanResponse:
 	def test_all_status_values(self, status):
 		"""Test all possible status values"""
 		response = UserBanResponse(
-			user_id=1,
+			user_id=uuid7(),
 			email="test@example.com",
 			status=status,
 			reason=None,

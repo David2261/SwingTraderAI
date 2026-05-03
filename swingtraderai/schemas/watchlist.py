@@ -50,7 +50,7 @@ class WatchlistItemUpdate(BaseModel):
 
 
 class WatchlistDataItem(BaseModel):
-	item_id: int
+	item_id: UUID
 	ticker_id: UUID
 	symbol: str
 	asset_type: str

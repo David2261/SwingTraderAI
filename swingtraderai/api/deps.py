@@ -3,10 +3,10 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swingtraderai.core.config import settings
+from swingtraderai.core.security import decode_token
 from swingtraderai.db.models.user import User, UserRole
 from swingtraderai.db.session import get_db
 
@@ -24,22 +24,16 @@ async def get_current_user(
 	)
 
 	try:
-		payload = jwt.decode(
-			token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-		)
-
-		user_id_str = payload.get("sub")
-		token_type = payload.get("type")
+		payload = decode_token(token)
+		user_id_str = payload.sub
+		token_type = getattr(payload, "type", None)
 
 		if user_id_str is None or token_type != "access":
 			raise credentials_exception
 
-		try:
-			user_id = UUID(user_id_str)
-		except ValueError as exc:
-			raise credentials_exception from exc
+		user_id = UUID(user_id_str)
 
-	except JWTError as exc:
+	except (JWTError, ValueError, AttributeError) as exc:
 		raise credentials_exception from exc
 
 	user = await db.get(User, user_id)

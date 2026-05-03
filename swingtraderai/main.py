@@ -9,7 +9,7 @@ from swingtraderai.api.v1 import auth, tickers, users, watchlist
 from swingtraderai.api.v1.admin import router as admin_router
 from swingtraderai.core.config import settings
 from swingtraderai.db.base import Base
-from swingtraderai.db.session import engine
+from swingtraderai.db.session import dispose_engine, engine
 
 
 @asynccontextmanager
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 	yield
 
-	await engine.dispose()
+	await dispose_engine()
 
 
 app = FastAPI(

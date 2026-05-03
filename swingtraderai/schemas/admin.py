@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Literal, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
@@ -101,7 +102,7 @@ class UserAdminOut(BaseModel):
 
 	model_config = ConfigDict(from_attributes=True)
 
-	id: int
+	id: UUID
 	username: str
 	email: EmailStr
 	telegram_id: Optional[str]
@@ -119,7 +120,7 @@ class UserAdminOut(BaseModel):
 class UserBanResponse(BaseModel):
 	"""Ответ после бана/разбана"""
 
-	user_id: int
+	user_id: UUID
 	email: EmailStr
 	status: Literal["banned", "unbanned", "temporarily_banned"]
 	reason: Optional[str]

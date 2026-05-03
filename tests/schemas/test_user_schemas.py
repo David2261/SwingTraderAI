@@ -143,7 +143,7 @@ def test_position_update_optional_fields():
 
 def test_position_out_long_position():
 	pos = PositionOut(
-		id=1,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="AAPL",
 		position_type="long",
@@ -161,7 +161,7 @@ def test_position_out_long_position():
 
 def test_position_out_short_position():
 	pos = PositionOut(
-		id=2,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="TSLA",
 		position_type="short",
@@ -180,7 +180,7 @@ def test_position_out_short_position():
 def test_position_out_no_current_price():
 	"""Если current_price = None, то computed поля должны возвращать None"""
 	pos = PositionOut(
-		id=3,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="GOOGL",
 		position_type="long",
@@ -198,7 +198,7 @@ def test_position_out_no_current_price():
 
 def test_position_out_zero_total_cost():
 	pos = PositionOut(
-		id=4,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="TEST",
 		position_type="long",
@@ -215,7 +215,7 @@ def test_position_out_zero_total_cost():
 def test_position_out_computed_fields_are_in_model_dump():
 	"""Проверяем, что computed fields попадают в model_dump()"""
 	pos = PositionOut(
-		id=1,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="NVDA",
 		position_type="long",
@@ -238,7 +238,7 @@ def test_position_out_computed_fields_are_in_model_dump():
 def test_unrealized_pnl_percent_pnl_none():
 	"""Проверяем ветку, где unrealized_pnl внезапно возвращает None"""
 	pos = PositionOut(
-		id=1,
+		id=uuid7(),
 		ticker_id=uuid7(),
 		symbol="AAPL",
 		position_type="long",

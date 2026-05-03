@@ -1,11 +1,13 @@
 from typing import Any, List
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select, update
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from swingtraderai.api.deps import get_current_user
+from swingtraderai.api.services.watchlist_service import WatchlistService
+from swingtraderai.core.tenant import get_current_tenant_id
 from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.db.models.user import User
@@ -20,11 +22,16 @@ from swingtraderai.schemas.watchlist import (
 router = APIRouter(prefix="/users/me/watchlist", tags=["watchlist"])
 
 
+def get_watchlist_service(db: AsyncSession = Depends(get_db)) -> WatchlistService:
+	return WatchlistService(db)
+
+
 @router.post("/items", response_model=WatchlistItemOut, status_code=201)
 async def add_to_watchlist(
 	item_in: WatchlistItemCreate,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
 ) -> WatchlistItemOut:
 	"""
 	Добавление тикера в список наблюдения текущего пользователя.
@@ -33,138 +40,66 @@ async def add_to_watchlist(
 	- Отсутствие тикера в текущем watchlist
 	При необходимости создает новый watchlist для пользователя.
 	"""
-	ticker = await db.get(Ticker, item_in.ticker_id)
-	if not ticker:
-		raise HTTPException(status_code=404, detail="Ticker not found")
-
-	existing = await db.execute(
-		select(WatchlistItem)
-		.join(Watchlist)
-		.where(
-			Watchlist.owner_id == current_user.id,
-			WatchlistItem.ticker_id == item_in.ticker_id,
-		)
+	item = await watchlist_service.add_item(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		item_in=item_in,
 	)
-	if existing.scalar_one_or_none():
-		raise HTTPException(status_code=400, detail="Ticker already in watchlist")
-
-	result = await db.execute(
-		select(Watchlist).where(Watchlist.owner_id == current_user.id)
-	)
-	watchlist = result.scalar_one_or_none()
-	if not watchlist:
-		watchlist = Watchlist(
-			owner_id=current_user.id, name=f"{current_user.id}-watchlist"
-		)
-		db.add(watchlist)
-		await db.commit()
-		await db.refresh(watchlist)
-
-	item = WatchlistItem(
-		watchlist_id=watchlist.id,
-		ticker_id=item_in.ticker_id,
-	)
-	db.add(item)
-	await db.commit()
-	await db.refresh(item)
-	return WatchlistItemOut.from_orm(item)
+	return WatchlistItemOut.model_validate(item)
 
 
 @router.get("/items", response_model=list[WatchlistItemOut])
 async def get_my_watchlist(
-	current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+	current_user: User = Depends(get_current_user),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
 ) -> list[WatchlistItemOut]:
 	"""
 	Получение списка всех тикеров в watchlist текущего пользователя.
 	Возвращает базовую информацию без ценовых данных.
 	"""
-	result = await db.execute(
-		select(WatchlistItem)
-		.join(Watchlist)
-		.where(Watchlist.owner_id == current_user.id)
-		.options(joinedload(WatchlistItem.ticker))
-		.order_by(WatchlistItem.created_at.desc())
-	)
-	items = result.scalars().all()
+	items = await watchlist_service.get_user_items(tenant_id, current_user.id)
 	return [WatchlistItemOut.model_validate(i) for i in items]
 
 
 @router.patch("/items/{item_id}", response_model=WatchlistItemOut)
 async def update_watchlist_item(
-	item_id: int,
+	item_id: UUID,
 	update_data: WatchlistItemUpdate,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
 ) -> WatchlistItemOut:
 	"""
 	Частичное обновление элемента в списке наблюдения.
 	Доступно только владельцу списка.
 	Сейчас поддерживается только обновление заметок (notes).
 	"""
-	stmt = select(WatchlistItem).where(WatchlistItem.id == item_id)
-	result = await db.execute(stmt)
-	item = result.scalar_one_or_none()
-
-	if not item:
-		raise HTTPException(
-			status_code=404, detail="Элемент списка наблюдения не найден"
-		)
-
-	owner_stmt = select(Watchlist.owner_id).where(Watchlist.id == item.watchlist_id)
-	owner_result = await db.execute(owner_stmt)
-	owner_id = owner_result.scalar()
-
-	if owner_id != current_user.id:
-		raise HTTPException(
-			status_code=403, detail="Это не ваш элемент списка наблюдения"
-		)
-
-	update_dict = update_data.model_dump(exclude_unset=True)
-	if not update_dict:
-		return WatchlistItemOut.model_validate(item)
-
-	stmt_update = (
-		update(WatchlistItem)
-		.where(WatchlistItem.id == item_id)
-		.values(**update_dict)
-		.returning(WatchlistItem)
+	item = await watchlist_service.update_item(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		item_id=item_id,
+		update_data=update_data,
 	)
-
-	updated_result = await db.execute(stmt_update)
-	updated_item = updated_result.scalar_one()
-
-	await db.commit()
-	await db.refresh(updated_item)
-
-	return WatchlistItemOut.model_validate(updated_item)
+	return WatchlistItemOut.model_validate(item)
 
 
 @router.delete("/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_from_watchlist(
-	item_id: int,
+	item_id: UUID,
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
 ) -> None:
 	"""
 	Удаление тикера из списка наблюдения.
 	Проверяет права доступа и существование элемента.
 	"""
-	stmt = select(WatchlistItem).where(WatchlistItem.id == item_id)
-	result = await db.execute(stmt)
-	item = result.scalar_one_or_none()
-	if not item:
-		raise HTTPException(404, "Item not found")
-
-	stmt_owner = select(Watchlist.owner_id).where(Watchlist.id == item.watchlist_id)
-	owner_result = await db.execute(stmt_owner)
-	owner_id = owner_result.scalar()
-
-	if owner_id != current_user.id:
-		raise HTTPException(403, "Not your watchlist item")
-
-	await db.delete(item)
-	await db.commit()
-	return None
+	await watchlist_service.remove_item(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		item_id=item_id,
+	)
 
 
 @router.get("/data", response_model=List[WatchlistDataItem])

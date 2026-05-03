@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -73,18 +74,29 @@ def admin_user(mock_db):
 
 @pytest.mark.asyncio
 async def test_get_current_user_success(mock_db, active_user):
-	test_secret = settings.SECRET_KEY
-	token = jwt.encode(
-		{"sub": str(active_user.id), "type": "access"}, test_secret, algorithm="HS256"
-	)
+	"""Тест успешного получения активного пользователя"""
+	now = datetime.now(timezone.utc)
+	expire = now + timedelta(minutes=15)
 
-	with pytest.MonkeyPatch.context() as mp:
-		mp.setattr("swingtraderai.api.deps.get_db", lambda: mock_db)
+	payload = {
+		"sub": str(active_user.id),
+		"type": "access",
+		"exp": expire,
+		"iat": now,
+		"nbf": now,
+		"jti": str(uuid7()),
+	}
 
-		user = await get_current_user(token=token, db=mock_db)
+	token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+	mock_db.get.return_value = active_user
+	user = await get_current_user(token=token, db=mock_db)
 
 	assert user.id == active_user.id
 	assert user.is_active is True
+	assert user.username == active_user.username
+
+	mock_db.get.assert_called_once_with(User, active_user.id)
 
 
 @pytest.mark.asyncio
@@ -110,11 +122,19 @@ async def test_get_current_user_wrong_token_type(mock_db):
 
 @pytest.mark.asyncio
 async def test_get_current_user_inactive(mock_db, inactive_user):
-	token = jwt.encode(
-		{"sub": str(inactive_user.id), "type": "access"},
-		settings.SECRET_KEY,
-		algorithm="HS256",
-	)
+	now = datetime.now(timezone.utc)
+	expire = now + timedelta(minutes=15)
+
+	payload = {
+		"sub": str(inactive_user.id),
+		"type": "access",
+		"exp": expire,
+		"iat": now,
+		"nbf": now,
+		"jti": str(uuid7()),
+	}
+
+	token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 	with pytest.raises(HTTPException) as exc_info:
 		await get_current_user(token=token, db=mock_db)
