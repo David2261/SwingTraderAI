@@ -4,7 +4,6 @@ from typing import AsyncGenerator
 import sqlalchemy as sa
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
@@ -12,6 +11,7 @@ from slowapi.util import get_remote_address
 from swingtraderai.api.v1 import auth, tickers, users, watchlist
 from swingtraderai.api.v1.admin import router as admin_router
 from swingtraderai.core.config import settings
+from swingtraderai.core.rate_limit import _rate_limit_exceeded_handler, limiter
 from swingtraderai.db.base import Base
 from swingtraderai.db.session import dispose_engine, engine
 
@@ -44,7 +44,6 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(RateLimitExceeded)
 def get_rate_limit_key(request: Request) -> str:
 	"""Ключ для rate limiting: сначала пытаемся взять user_id, потом IP"""
 	if hasattr(request.state, "user") and request.state.user:
@@ -53,14 +52,7 @@ def get_rate_limit_key(request: Request) -> str:
 	return f"ip:{get_remote_address(request)}"
 
 
-limiter = Limiter(
-	key_func=get_rate_limit_key,
-	default_limits=["120/minute"],
-	storage_uri=settings.REDIS_URL,
-	strategy="fixed-window",
-)
-
-
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
