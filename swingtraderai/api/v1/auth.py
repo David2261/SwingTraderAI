@@ -1,6 +1,6 @@
 from typing import Any, Dict, cast
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -33,6 +33,7 @@ def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
 @router.post("/register", response_model=Token)
 @limiter.limit("5/minute")
 async def register(
+	request: Request,
 	user_in: UserCreate,
 	auth_service: AuthService = Depends(get_auth_service),
 ) -> Dict[str, str]:
@@ -48,6 +49,7 @@ async def register(
 @router.post("/login", response_model=Token)
 @limiter.limit("12/minute")
 async def login(
+	request: Request,
 	form_data: OAuth2PasswordRequestForm = Depends(),
 	auth_service: AuthService = Depends(get_auth_service),
 ) -> Dict[str, str]:
@@ -62,7 +64,7 @@ async def login(
 @router.post("/forgot-password")
 @limiter.limit("6/minute")
 async def forgot_password(
-	email: str = Body(...), db: AsyncSession = Depends(get_db)
+	request: Request, email: str = Body(...), db: AsyncSession = Depends(get_db)
 ) -> Dict[str, str]:
 	"""
 	Отправка ссылки для сброса пароля.
@@ -80,6 +82,7 @@ async def forgot_password(
 @router.post("/reset-password")
 @limiter.limit("5/minute")
 async def reset_password(
+	request: Request,
 	token: str = Body(...),
 	new_password: str = Body(...),
 	db: AsyncSession = Depends(get_db),
@@ -123,6 +126,7 @@ async def reset_password(
 @router.post("/change-password")
 @limiter.limit("8/10minutes")
 async def change_password(
+	request: Request,
 	current_user: User = Depends(get_current_user),
 	old_password: str = Body(...),
 	new_password: str = Body(...),
@@ -144,7 +148,9 @@ async def change_password(
 
 @router.post("/logout")
 @limiter.limit("5/minute")
-async def logout(current_user: User = Depends(get_current_user)) -> Dict[str, str]:
+async def logout(
+	request: Request, current_user: User = Depends(get_current_user)
+) -> Dict[str, str]:
 	"""
 	Логика выхода: если используешь refresh tokens, можно их инвалидировать.
 	В простом варианте можно просто возвращать сообщение.

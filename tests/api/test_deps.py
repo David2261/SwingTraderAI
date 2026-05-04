@@ -73,7 +73,7 @@ def admin_user(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_success(mock_db, active_user):
+async def test_get_current_user_success(mock_db, active_user, mock_request):
 	"""Тест успешного получения активного пользователя"""
 	now = datetime.now(timezone.utc)
 	expire = now + timedelta(minutes=15)
@@ -89,8 +89,10 @@ async def test_get_current_user_success(mock_db, active_user):
 
 	token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
+	request = mock_request()
+
 	mock_db.get.return_value = active_user
-	user = await get_current_user(token=token, db=mock_db)
+	user = await get_current_user(request=request, token=token, db=mock_db)
 
 	assert user.id == active_user.id
 	assert user.is_active is True
@@ -100,28 +102,32 @@ async def test_get_current_user_success(mock_db, active_user):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_invalid_token(mock_db):
+async def test_get_current_user_invalid_token(mock_db, mock_request):
+	request = mock_request()
+
 	with pytest.raises(HTTPException) as exc_info:
-		await get_current_user(token="invalid.token.here", db=mock_db)
+		await get_current_user(request=request, token="invalid.token.here", db=mock_db)
 
 	assert exc_info.value.status_code == 401
 	assert "Could not validate credentials" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_wrong_token_type(mock_db):
+async def test_get_current_user_wrong_token_type(mock_db, mock_request):
+	request = mock_request()
 	token = jwt.encode(
 		{"sub": str(uuid7()), "type": "refresh"}, "test-secret-key", algorithm="HS256"
 	)
 
 	with pytest.raises(HTTPException) as exc_info:
-		await get_current_user(token=token, db=mock_db)
+		await get_current_user(request=request, token=token, db=mock_db)
 
 	assert exc_info.value.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_inactive(mock_db, inactive_user):
+async def test_get_current_user_inactive(mock_db, inactive_user, mock_request):
+	request = mock_request()
 	now = datetime.now(timezone.utc)
 	expire = now + timedelta(minutes=15)
 
@@ -137,7 +143,7 @@ async def test_get_current_user_inactive(mock_db, inactive_user):
 	token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 	with pytest.raises(HTTPException) as exc_info:
-		await get_current_user(token=token, db=mock_db)
+		await get_current_user(request=request, token=token, db=mock_db)
 
 	assert exc_info.value.status_code == 403
 	assert "Inactive user" in exc_info.value.detail

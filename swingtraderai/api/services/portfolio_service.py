@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List
 from uuid import UUID
 
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from swingtraderai.db.models.market import MarketData, Ticker
-from swingtraderai.db.models.system import Watchlist, WatchlistItem
+from swingtraderai.db.models.user import Position
 from swingtraderai.schemas.user import PortfolioAsset, PortfolioSummary
 
 
@@ -25,44 +26,41 @@ class PortfolioService:
 		- P&L за день (% и абсолютное)
 		- распределение по типам активов
 		"""
-		latest_prices_cte = (
-			select(
-				MarketData.ticker_id,
-				MarketData.close,
-				func.row_number()
-				.over(
-					partition_by=MarketData.ticker_id,
-					order_by=MarketData.timestamp.desc(),
-				)
-				.label("rn"),
+
+		# Последняя цена по каждому тикеру
+		latest_price_cte = select(
+			MarketData.ticker_id,
+			MarketData.close.label("current_price"),
+			func.row_number()
+			.over(
+				partition_by=MarketData.ticker_id,
+				order_by=MarketData.timestamp.desc(),
 			)
-			.join(WatchlistItem, WatchlistItem.ticker_id == MarketData.ticker_id)
-			.join(Watchlist, WatchlistItem.watchlist_id == Watchlist.id)
-			.where(Watchlist.owner_id == user_id)
-			.cte("latest_prices")
-		)
+			.label("rn"),
+		).cte("latest_prices")
 
-		curr_price = aliased(latest_prices_cte)
-		prev_price = aliased(latest_prices_cte)
+		curr_price = aliased(latest_price_cte)
 
+		# Основной запрос
 		stmt = (
 			select(
+				Position,
 				Ticker.asset_type,
-				func.sum(curr_price.c.close).label("total_value"),
-				func.sum(prev_price.c.close).label("prev_value"),
+				curr_price.c.current_price,
 			)
-			.join(WatchlistItem, WatchlistItem.ticker_id == Ticker.id)
-			.join(Watchlist, WatchlistItem.watchlist_id == Watchlist.id)
-			.join(
-				curr_price,
-				and_(curr_price.c.ticker_id == Ticker.id, curr_price.c.rn == 1),
-			)
+			.join(Ticker, Position.ticker_id == Ticker.id)
 			.outerjoin(
-				prev_price,
-				and_(prev_price.c.ticker_id == Ticker.id, prev_price.c.rn == 2),
+				curr_price,
+				and_(
+					curr_price.c.ticker_id == Position.ticker_id,
+					curr_price.c.rn == 1,
+				),
 			)
-			.where(Watchlist.owner_id == user_id)
-			.group_by(Ticker.asset_type)
+			.where(
+				Position.tenant_id == tenant_id,
+				Position.user_id == user_id,
+				Position.closed_at.is_(None),
+			)
 		)
 
 		result = await self.session.execute(stmt)
@@ -76,45 +74,60 @@ class PortfolioService:
 				assets=[],
 			)
 
-		total_value = 0.0
-		total_prev_value = 0.0
+		total_value = Decimal("0")
+		total_unrealized_pnl = Decimal("0")
+		assets_dict: dict[str, dict[str, Decimal]] = {}
+
+		for position, asset_type, current_price in rows:
+			current_price = Decimal(str(current_price or 0))
+			qty = Decimal(str(position.quantity))
+			avg_price = Decimal(str(position.average_entry_price))
+
+			# Расчёт текущей стоимости и PnL
+			if position.position_type == "long":
+				position_value = qty * current_price
+				unrealized_pnl = (current_price - avg_price) * qty
+			else:
+				position_value = qty * current_price
+				unrealized_pnl = (avg_price - current_price) * qty
+
+			total_value += position_value
+			total_unrealized_pnl += unrealized_pnl
+
+			# Группировка по asset_type
+			if asset_type not in assets_dict:
+				assets_dict[asset_type] = {
+					"value": Decimal("0"),
+					"pnl": Decimal("0"),
+				}
+
+			assets_dict[asset_type]["value"] += position_value
+			assets_dict[asset_type]["pnl"] += unrealized_pnl
+
 		assets: List[PortfolioAsset] = []
-
-		for row in rows:
-			asset_type, current_sum, prev_sum = row
-
-			asset_value = float(current_sum or 0.0)
-			asset_prev = float(prev_sum or 0.0)
-
-			total_value += asset_value
-			total_prev_value += asset_prev
-
-			asset_change = asset_value - asset_prev
-			asset_change_pct = (
-				(asset_change / asset_prev * 100) if asset_prev != 0 else 0.0
-			)
+		for asset_type, data in assets_dict.items():
+			value = float(data["value"])
+			pnl = float(data["pnl"])
 
 			assets.append(
 				PortfolioAsset(
 					asset_type=asset_type,
-					value=asset_value,
+					value=value,
 					percent=(
-						(asset_value / total_value * 100) if total_value != 0 else 0.0
+						(value / float(total_value) * 100) if total_value > 0 else 0.0
 					),
-					change_percent=asset_change_pct,
-					change_abs=asset_change,
+					change_percent=0.0,
+					change_abs=pnl,
 				)
 			)
 
-		total_change_abs = total_value - total_prev_value
+		total_change_abs = float(total_unrealized_pnl)
 		total_change_pct = (
-			(total_change_abs / total_prev_value * 100)
-			if total_prev_value != 0
-			else 0.0
+			(total_change_abs / float(total_value) * 100) if total_value > 0 else 0.0
 		)
 
 		return PortfolioSummary(
-			total_value=total_value,
+			total_value=float(total_value),
 			total_change_percent=total_change_pct,
 			total_change_abs=total_change_abs,
 			assets=assets,

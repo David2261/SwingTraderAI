@@ -91,7 +91,7 @@ async def _async_ingest_ohlcv(
 	}
 
 
-@shared_task(  # type: ignore
+@shared_task(
 	name="ingestion.ingest_ohlcv",
 	bind=True,
 	max_retries=5,
