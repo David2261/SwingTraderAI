@@ -42,6 +42,23 @@ swingtraderai/
 
 ---
 
+## 🏗 Implemented Architecture: API → Services → Repositories → DB + Multi-Tenancy
+We have successfully migrated the project to a clean, layered architecture:
+
+* API Layer (api/v1/routers/) — Handles HTTP requests, validation, and dependencies
+* Service Layer (services/) — Contains business logic, rules, calculations, and orchestration
+* Repository Layer (repositories/) — Responsible for all database operations and queries
+* Database Layer — SQLAlchemy models + Alembic migrations
+
+Key Multi-Tenancy Features:
+* All user-specific data is isolated using tenant_id
+* Automatic tenant filtering is implemented in BaseRepository
+* tenant_id is extracted from JWT token via get_current_tenant_id()
+* Shared data (Ticker, MarketData, Exchange) remains tenant-independent
+* Row Level Security (RLS) is prepared at the database level
+
+---
+
 ## 🛠 Tech Stack
 
 * **Python:** 3.12 - 3.14
