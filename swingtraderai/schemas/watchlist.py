@@ -24,6 +24,10 @@ class WatchlistItemBase(BaseModel):
 
 class WatchlistItemOut(WatchlistItemBase):
 	id: UUID
+	notes: Optional[str] = None
+	reason: Optional[str] = None
+	target_price: Optional[float] = None
+	stop_loss: Optional[float] = None
 	watchlist_id: UUID
 	ticker_id: UUID
 
@@ -36,15 +40,19 @@ class WatchlistItemCreate(WatchlistItemBase):
 	Можно расширить дополнительными полями при необходимости.
 	"""
 
-	pass
+	notes: Optional[str] = None
+	reason: Optional[str] = None
+	target_price: Optional[float] = None
+	stop_loss: Optional[float] = None
 
 
 class WatchlistItemUpdate(BaseModel):
 	"""Схема для частичного обновления элемента в watchlist"""
 
-	notes: Optional[str] = Field(
-		None, description="Заметки к тикеру в списке наблюдения"
-	)
+	notes: Optional[str] = None
+	reason: Optional[str] = None
+	target_price: Optional[float] = None
+	stop_loss: Optional[float] = None
 
 	model_config = ConfigDict(from_attributes=True)
 
@@ -59,5 +67,10 @@ class WatchlistDataItem(BaseModel):
 	change_abs: Optional[float]
 	volume: Optional[float]
 	added_at: datetime
+	notes: Optional[str] = None
+	reason: Optional[str] = None
+	target_price: Optional[float] = None
+	stop_loss: Optional[float] = None
+	signals: list[str] = []
 
 	model_config = ConfigDict(from_attributes=True)

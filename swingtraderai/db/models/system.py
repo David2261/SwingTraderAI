@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String
+from sqlalchemy import TIMESTAMP, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
@@ -56,6 +56,18 @@ class WatchlistItem(TenantBase):
 	)
 	ticker_id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), ForeignKey("tickers.id")
+	)
+	signal_id: Mapped[uuid.UUID | None] = mapped_column(
+		UUID(as_uuid=True), ForeignKey("signals.id"), nullable=True
+	)
+	notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+	reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+	target_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+	stop_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+	last_signal_at: Mapped[datetime | None] = mapped_column(
+		TIMESTAMP(timezone=True), nullable=True
 	)
 	created_at: Mapped[datetime] = mapped_column(
 		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)

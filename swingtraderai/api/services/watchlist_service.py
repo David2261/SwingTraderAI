@@ -26,6 +26,17 @@ class WatchlistService:
 		self.item_repo = WatchlistItemRepository(session)
 		self.watchlist_repo = WatchlistRepository(session)
 
+	def check_signal(self, item: WatchlistItem, price: float) -> list[str]:
+		signals = []
+
+		if item.target_price and price >= item.target_price:
+			signals.append("TARGET_HIT")
+
+		if item.stop_loss and price <= item.stop_loss:
+			signals.append("STOP_LOSS_HIT")
+
+		return signals
+
 	async def add_item(
 		self, tenant_id: UUID, user_id: UUID, item_in: WatchlistItemCreate
 	) -> WatchlistItem:
@@ -48,6 +59,10 @@ class WatchlistService:
 		item_data = {
 			"watchlist_id": watchlist.id,
 			"ticker_id": item_in.ticker_id,
+			"notes": item_in.notes,
+			"reason": item_in.reason,
+			"target_price": item_in.target_price,
+			"stop_loss": item_in.stop_loss,
 		}
 
 		item = await self.item_repo.create(tenant_id, item_data)
@@ -174,6 +189,8 @@ class WatchlistService:
 			change_abs = float(lp - pp) if lp and pp else 0.0
 			change_pct = float((lp - pp) / pp * 100) if lp and pp and pp != 0 else 0.0
 
+			signals = self.check_signal(wi, float(lp) if lp else 0)
+
 			items.append(
 				WatchlistDataItem(
 					item_id=wi.id,
@@ -185,6 +202,11 @@ class WatchlistService:
 					change_abs=change_abs,
 					volume=float(lv) if lv else None,
 					added_at=wi.created_at,
+					notes=wi.notes,
+					reason=wi.reason,
+					target_price=wi.target_price,
+					stop_loss=wi.stop_loss,
+					signals=signals,
 				)
 			)
 
