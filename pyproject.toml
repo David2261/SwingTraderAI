@@ -50,6 +50,7 @@ dependencies = [
 	"kagglehub (>=1.0.0,<2.0.0)",
 	"scikit-learn (>=1.8.0,<2.0.0)",
 	"starlette (>=1.0.0,<2.0.0)",
+	"slowapi (>=0.1.9,<0.2.0)",
 ]
 
 packages = [
@@ -101,6 +102,7 @@ ignore = [
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
+disallow_untyped_decorators = false
 plugins = ["pydantic.mypy"]
 exclude = ["tests/.*", "alembic/.*", "celery/.*", ".tools/.*"]
 
@@ -119,6 +121,11 @@ check_untyped_defs = false
 [[tool.mypy.overrides]]
 module = "swingtraderai.ml.trainer"
 disable_error_code = "misc"
+
+[[tool.mypy.overrides]]
+module = "slowapi.*"
+ignore_missing_imports = true
+ignore_errors = true
 
 [tool.pytest.ini_options]
 minversion = "8.0"

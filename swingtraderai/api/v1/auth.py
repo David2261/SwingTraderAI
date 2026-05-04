@@ -13,6 +13,7 @@ from swingtraderai.core.exceptions import (
 	InvalidCredentialsException,
 	raise_http_exception,
 )
+from swingtraderai.core.rate_limit import limiter
 from swingtraderai.core.security import (
 	create_access_token,
 	get_password_hash,
@@ -30,6 +31,7 @@ def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
 
 
 @router.post("/register", response_model=Token)
+@limiter.limit("5/minute")
 async def register(
 	user_in: UserCreate,
 	auth_service: AuthService = Depends(get_auth_service),
@@ -44,6 +46,7 @@ async def register(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("12/minute")
 async def login(
 	form_data: OAuth2PasswordRequestForm = Depends(),
 	auth_service: AuthService = Depends(get_auth_service),
@@ -57,6 +60,7 @@ async def login(
 
 
 @router.post("/forgot-password")
+@limiter.limit("6/minute")
 async def forgot_password(
 	email: str = Body(...), db: AsyncSession = Depends(get_db)
 ) -> Dict[str, str]:
@@ -74,6 +78,7 @@ async def forgot_password(
 
 
 @router.post("/reset-password")
+@limiter.limit("5/minute")
 async def reset_password(
 	token: str = Body(...),
 	new_password: str = Body(...),
@@ -116,6 +121,7 @@ async def reset_password(
 
 
 @router.post("/change-password")
+@limiter.limit("8/10minutes")
 async def change_password(
 	current_user: User = Depends(get_current_user),
 	old_password: str = Body(...),
@@ -137,6 +143,7 @@ async def change_password(
 
 
 @router.post("/logout")
+@limiter.limit("5/minute")
 async def logout(current_user: User = Depends(get_current_user)) -> Dict[str, str]:
 	"""
 	Логика выхода: если используешь refresh tokens, можно их инвалидировать.
