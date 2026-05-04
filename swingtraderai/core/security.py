@@ -1,10 +1,11 @@
-import uuid
 import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import UUID
 
 from jose import jwt
 from passlib.context import CryptContext
+from uuid6 import uuid7
 
 from swingtraderai.core.config import settings
 from swingtraderai.schemas.auth import JWTPayload
@@ -29,7 +30,12 @@ def get_password_hash(password: str) -> str:
 	return str(password_hash)
 
 
-def _create_token(subject: str, expires_delta: timedelta, token_type: str) -> str:
+def _create_token(
+	subject: str,
+	expires_delta: timedelta,
+	token_type: str,
+	tenant_id: UUID | None = None,
+) -> str:
 	now = datetime.now(timezone.utc)
 	expire = now + expires_delta
 
@@ -39,8 +45,11 @@ def _create_token(subject: str, expires_delta: timedelta, token_type: str) -> st
 		"exp": expire,
 		"iat": now,
 		"nbf": now,
-		"jti": str(uuid.uuid4()),
+		"jti": str(uuid7()),
 	}
+
+	if tenant_id:
+		payload["tenant_id"] = str(tenant_id)
 
 	encoded_token = jwt.encode(
 		payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
@@ -50,17 +59,21 @@ def _create_token(subject: str, expires_delta: timedelta, token_type: str) -> st
 
 
 def create_access_token(
-	subject: str | Any, expires_delta: timedelta | None = None
+	subject: str | Any,
+	tenant_id: UUID | None = None,
+	expires_delta: timedelta | None = None,
 ) -> str:
 	expires = expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-	return _create_token(subject, expires, "access")
+	return _create_token(subject, expires, "access", tenant_id)
 
 
 def create_refresh_token(
-	subject: str | Any, expires_delta: timedelta | None = None
+	subject: str | Any,
+	tenant_id: UUID | None = None,
+	expires_delta: timedelta | None = None,
 ) -> str:
 	expires = expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-	return _create_token(subject, expires, "refresh")
+	return _create_token(subject, expires, "refresh", tenant_id)
 
 
 def decode_token(token: str) -> JWTPayload:

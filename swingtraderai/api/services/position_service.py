@@ -10,6 +10,8 @@ from swingtraderai.schemas.user import PositionCreate, PositionUpdate
 
 
 class PositionService:
+	"""Сервис для управления позициями пользователя"""
+
 	def __init__(self, session: AsyncSession):
 		self.repo = PositionRepository(session)
 

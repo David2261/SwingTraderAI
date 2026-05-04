@@ -11,11 +11,15 @@ from .base import TenantAwareRepository
 
 
 class WatchlistRepository(TenantAwareRepository[Watchlist]):
+	"""Репозиторий для управления watchlist пользователей."""
+
 	def __init__(self, session: AsyncSession):
 		super().__init__(session, Watchlist)
 
 
 class WatchlistItemRepository(TenantAwareRepository[WatchlistItem]):
+	"""Репозиторий для управления элементами watchlist (WatchlistItem)."""
+
 	def __init__(self, session: AsyncSession):
 		super().__init__(session, WatchlistItem)
 

@@ -1,15 +1,12 @@
-from typing import Any, List
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.api.deps import get_current_user
 from swingtraderai.api.services.watchlist_service import WatchlistService
 from swingtraderai.core.tenant import get_current_tenant_id
-from swingtraderai.db.models.market import MarketData, Ticker
-from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.watchlist import (
@@ -111,86 +108,18 @@ async def get_watchlist_with_prices(
 	),
 	order: str = Query("desc", description="Порядок: asc / desc"),
 	current_user: User = Depends(get_current_user),
-	db: AsyncSession = Depends(get_db),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
 ) -> List[WatchlistDataItem]:
 	"""
 	Возвращает watchlist текущего пользователя с актуальными ценами,
 	изменением за день и объёмом.
 	Это основной экран для просмотра портфеля/наблюдения.
 	"""
-	subq = (
-		select(
-			MarketData.ticker_id,
-			MarketData.close.label("last_price"),
-			MarketData.volume.label("last_volume"),
-			MarketData.timestamp,
-			func.lag(MarketData.close)
-			.over(partition_by=MarketData.ticker_id, order_by=MarketData.timestamp)
-			.label("prev_price"),
-		).order_by(MarketData.ticker_id, MarketData.timestamp.desc())
-	).subquery()
-
-	last_prices = (
-		select(subq)
-		.distinct(subq.c.ticker_id)
-		.order_by(subq.c.ticker_id, subq.c.timestamp.desc())
-	).subquery()
-
-	stmt = (
-		select(
-			WatchlistItem,
-			Ticker.symbol,
-			Ticker.asset_type,
-			last_prices.c.last_price,
-			last_prices.c.last_volume,
-			last_prices.c.prev_price,
-		)
-		.join(Watchlist, WatchlistItem.watchlist_id == Watchlist.id)
-		.join(Ticker, WatchlistItem.ticker_id == Ticker.id)
-		.join(last_prices, last_prices.c.ticker_id == Ticker.id)
-		.where(Watchlist.owner_id == current_user.id)
+	return await watchlist_service.get_watchlist_with_prices(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
+		limit=limit,
+		sort_by=sort_by,
+		order=order,
 	)
-
-	sort_field: Any = None
-
-	if sort_by == "price":
-		sort_field = last_prices.c.last_price
-	elif sort_by == "volume":
-		sort_field = last_prices.c.last_volume
-	elif sort_by == "change_percent":
-		sort_field = (
-			last_prices.c.last_price - last_prices.c.prev_price
-		) / func.nullif(last_prices.c.prev_price, 0)
-	else:
-		sort_field = Ticker.symbol
-
-	if order.lower() == "asc":
-		stmt = stmt.order_by(sort_field.asc())
-	else:
-		stmt = stmt.order_by(sort_field.desc())
-
-	result = await db.execute(stmt.limit(limit))
-	rows = result.all()
-
-	items = []
-	for row in rows:
-		wi, symbol, a_type, lp, lv, pp = row
-
-		change_abs = float(lp - pp) if lp and pp else 0.0
-		change_pct = float((lp - pp) / pp * 100) if lp and pp and pp != 0 else 0.0
-
-		items.append(
-			WatchlistDataItem(
-				item_id=wi.id,
-				ticker_id=wi.ticker_id,
-				symbol=symbol,
-				asset_type=a_type,
-				last_price=float(lp) if lp else None,
-				change_percent=change_pct,
-				change_abs=change_abs,
-				volume=float(lv) if lv else None,
-				added_at=wi.created_at,
-			)
-		)
-
-	return items

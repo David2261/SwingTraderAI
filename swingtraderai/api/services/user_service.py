@@ -7,6 +7,8 @@ from swingtraderai.db.models.user import User
 
 
 class UserService:
+	"""Сервис для работы с пользователями"""
+
 	def __init__(self, session: AsyncSession):
 		self.repository = UserRepository(session)
 

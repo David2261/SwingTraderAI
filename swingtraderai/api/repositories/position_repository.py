@@ -11,6 +11,8 @@ from .base import TenantAwareRepository
 
 
 class PositionRepository(TenantAwareRepository[Position]):
+	"""Репозиторий для управления позициями пользователей."""
+
 	def __init__(self, session: AsyncSession):
 		super().__init__(session, Position)
 

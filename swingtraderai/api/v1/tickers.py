@@ -2,14 +2,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import Select
 
 from swingtraderai.api.deps import get_current_user
 from swingtraderai.api.services.ticker_service import TickerService
-from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
 from swingtraderai.schemas.ticker import (
@@ -86,12 +83,12 @@ async def search_tickers(
 
 @router.get("/{ticker_id}/data", response_model=list[OHLCVDataOut])
 async def get_ticker_historical_data(
-	ticker_id: str,
+	ticker_id: UUID,
 	timeframe: str = Query("1d", description="Таймфрейм: 1m, 5m, 15m, 1h, 1d, 1w..."),
 	limit: int = Query(500, ge=1, le=5000, description="Максимум свечей"),
 	start_date: Optional[datetime] = Query(None, description="Начальная дата (ISO)"),
 	end_date: Optional[datetime] = Query(None, description="Конечная дата (ISO)"),
-	db: AsyncSession = Depends(get_db),
+	ticker_service: TickerService = Depends(get_ticker_service),
 ) -> List[OHLCVDataOut]:
 	"""
 	Возвращает исторические OHLCV данные для тикера.
@@ -103,30 +100,13 @@ async def get_ticker_historical_data(
 	- start_date: фильтр по начальной дате
 	- end_date: фильтр по конечной дате
 	"""
-	ticker = await db.get(Ticker, ticker_id)
-	if not ticker:
-		raise HTTPException(status_code=404, detail="Ticker not found")
-
-	stmt: Select[tuple[MarketData]] = (
-		select(MarketData)
-		.where(MarketData.ticker_id == ticker_id)
-		.where(MarketData.timeframe == timeframe)
-		.order_by(MarketData.timestamp.desc())
-		.limit(limit)
+	return await ticker_service.get_historical_data(
+		ticker_id=ticker_id,
+		timeframe=timeframe,
+		limit=limit,
+		start_date=start_date,
+		end_date=end_date,
 	)
-
-	if start_date:
-		stmt = stmt.where(MarketData.timestamp >= start_date)
-	if end_date:
-		stmt = stmt.where(MarketData.timestamp <= end_date)
-
-	result = await db.execute(stmt)
-	data = result.scalars().all()
-
-	if not data:
-		return []
-
-	return [OHLCVDataOut.model_validate(d) for d in data]
 
 
 @router.post("/bulk", response_model=List[TickerOut], status_code=201)
@@ -141,104 +121,33 @@ async def bulk_create_tickers(
 
 @router.get("/{ticker_id}/indicators")
 async def get_technical_indicators(
-	ticker_id: str,
+	ticker_id: UUID,
 	period: str = Query("1h", description="Таймфрейм: 1m, 5m, 15m, 1h, 1d, 1w..."),
 	indicators: str = Query(
 		..., description="Список индикаторов через запятую: rsi,macd,sma20"
 	),
-	db: AsyncSession = Depends(get_db),
+	ticker_service: TickerService = Depends(get_ticker_service),
 ) -> Dict[str, Any]:
 	"""
 	Технические индикаторы (SMA, RSI, MACD, Bollinger и т.д.)
 	"""
-	ticker = await db.get(Ticker, ticker_id)
-	if not ticker:
-		raise HTTPException(status_code=404, detail="Ticker not found")
-
-	stmt = (
-		select(MarketData)
-		.where(MarketData.ticker_id == ticker_id)
-		.where(MarketData.timeframe == period)
-		.order_by(MarketData.timestamp.desc())
-		.limit(200)
+	return await ticker_service.get_technical_indicators(
+		ticker_id=ticker_id,
+		period=period,
+		indicators=indicators,
 	)
-
-	result = await db.execute(stmt)
-	data = result.scalars().all()
-
-	if not data:
-		raise HTTPException(status_code=404, detail="No data found")
-
-	data = sorted(
-		data, key=lambda x: x.timestamp if x.timestamp is not None else datetime.min
-	)
-	prices = [d.close for d in data]
-	_ = prices
-	# Здесь используйте ваши готовые функции для расчета индикаторов
-	# Например:
-	# from swingtraderai.indicators import calculate_rsi, calculate_macd, calculate_sma
-
-	result_indicators: Dict[str, Any] = {}
-	indicators_list = [i.strip().lower() for i in indicators.split(",")]
-
-	for ind in indicators_list:
-		if ind == "rsi":
-			# result_indicators["rsi"] = calculate_rsi(prices)
-			pass
-		elif ind == "macd":
-			# macd, signal, hist = calculate_macd(prices)
-			# result_indicators["macd"] = {
-			# "macd": macd, "signal": signal, "histogram": hist}
-			pass
-		elif ind.startswith("sma"):
-			# period = int(ind[3:])
-			# result_indicators[ind] = calculate_sma(prices, period)
-			pass
-
-	return {
-		"ticker_id": ticker_id,
-		"period": period,
-		"indicators": result_indicators,
-		"timestamp": datetime.utcnow(),
-	}
 
 
 @router.get("/{ticker_id}/signals")
 async def get_trading_signals(
-	ticker_id: str,
+	ticker_id: UUID,
 	period: str = Query("1h", description="Таймфрейм для анализа"),
-	db: AsyncSession = Depends(get_db),
+	ticker_service: TickerService = Depends(get_ticker_service),
 ) -> Dict[str, Any]:
 	"""
 	Торговые сигналы от ML/AI модели
 	"""
-	ticker = await db.get(Ticker, ticker_id)
-	if not ticker:
-		raise HTTPException(status_code=404, detail="Ticker not found")
-
-	stmt = (
-		select(MarketData)
-		.where(MarketData.ticker_id == ticker_id)
-		.where(MarketData.timeframe == period)
-		.order_by(MarketData.timestamp.desc())
-		.limit(100)
+	return await ticker_service.get_trading_signals(
+		ticker_id=ticker_id,
+		period=period,
 	)
-
-	result = await db.execute(stmt)
-	data = result.scalars().all()
-
-	if not data:
-		raise HTTPException(status_code=404, detail="No data found")
-
-	# Здесь используйте вашу ML модель для генерации сигналов
-	# Например:
-	# from swingtraderai.ml import predict_signal
-	# signal_result = predict_signal(ticker.symbol, data)
-
-	# Заглушка
-	return {
-		"signal": "buy",
-		"confidence": 0.78,
-		"reason": "Модель обнаружила бычий паттерн на графике",
-		"timestamp": datetime.utcnow(),
-	}

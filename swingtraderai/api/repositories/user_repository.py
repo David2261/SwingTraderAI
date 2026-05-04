@@ -7,6 +7,8 @@ from .base import TenantAwareRepository
 
 
 class UserRepository(TenantAwareRepository[User]):
+	"""Репозиторий для управления пользователями (без tenant_id)"""
+
 	def __init__(self, session: AsyncSession):
 		super().__init__(session, User)
 

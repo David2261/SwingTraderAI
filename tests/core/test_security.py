@@ -113,13 +113,13 @@ def test_token_has_unique_jti():
 	assert d1["jti"] != d2["jti"]
 
 
-def test_token_uses_uuid4_for_jti(monkeypatch):
+def test_token_uses_uuid7_for_jti(monkeypatch):
 	fake_uuid = "123e4567-e89b-12d3-a456-426614174000"
 
-	def fake_uuid4():
+	def fake_uuid7():
 		return uuid.UUID(fake_uuid)
 
-	monkeypatch.setattr(uuid, "uuid4", fake_uuid4)
+	monkeypatch.setattr("swingtraderai.core.security.uuid7", fake_uuid7)
 
 	token = create_access_token("test")
 	decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])

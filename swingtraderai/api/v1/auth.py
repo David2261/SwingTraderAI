@@ -7,15 +7,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.api.deps import get_current_user
+from swingtraderai.api.services.auth_service import AuthService
 from swingtraderai.core.config import settings
 from swingtraderai.core.exceptions import (
 	InvalidCredentialsException,
-	UserAlreadyExistsException,
 	raise_http_exception,
 )
 from swingtraderai.core.security import (
 	create_access_token,
-	create_refresh_token,
 	get_password_hash,
 	verify_password,
 )
@@ -26,9 +25,14 @@ from swingtraderai.schemas.auth import Token, UserCreate
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
+	return AuthService(db)
+
+
 @router.post("/register", response_model=Token)
 async def register(
-	user_in: UserCreate, db: AsyncSession = Depends(get_db)
+	user_in: UserCreate,
+	auth_service: AuthService = Depends(get_auth_service),
 ) -> Dict[str, str]:
 	"""
 	Регистрация нового пользователя.
@@ -36,54 +40,20 @@ async def register(
 	создает нового пользователя
 	и возвращает токены доступа и обновления.
 	"""
-	existing = await db.execute(select(User).where(User.email == user_in.email))
-	if existing.scalar_one_or_none():
-		raise_http_exception(UserAlreadyExistsException())
-
-	hashed_pw = get_password_hash(user_in.password)
-	user = User(
-		username=user_in.username,
-		email=user_in.email,
-		password_hash=hashed_pw,
-		telegram_id=user_in.telegram_id,
-	)
-	db.add(user)
-	await db.commit()
-	await db.refresh(user)
-
-	access_token = create_access_token(user.id)
-	refresh_token = create_refresh_token(user.id)
-	return {
-		"access_token": access_token,
-		"refresh_token": refresh_token,
-		"token_type": "bearer",
-	}
+	return await auth_service.register(user_in)
 
 
 @router.post("/login", response_model=Token)
 async def login(
-	form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+	form_data: OAuth2PasswordRequestForm = Depends(),
+	auth_service: AuthService = Depends(get_auth_service),
 ) -> Dict[str, str]:
 	"""
 	Аутентификация пользователя.
 	Проверяет учетные данные и возвращает токены доступа,
 	а также токен и обновления.
 	"""
-	result = await db.execute(select(User).where(User.email == form_data.username))
-	user = result.scalar_one_or_none()
-
-	if user is None:
-		raise_http_exception(InvalidCredentialsException())
-
-	user = cast(User, user)
-
-	access_token = create_access_token(user.id)
-	refresh_token = create_refresh_token(user.id)
-	return {
-		"access_token": access_token,
-		"refresh_token": refresh_token,
-		"token_type": "bearer",
-	}
+	return await auth_service.login(form_data.username, form_data.password)
 
 
 @router.post("/forgot-password")
