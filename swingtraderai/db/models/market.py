@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import NUMERIC, UUID
@@ -10,6 +12,9 @@ from sqlalchemy.sql import func
 from uuid6 import uuid7
 
 from swingtraderai.db.base import Base
+
+if TYPE_CHECKING:
+	from swingtraderai.db.models.system import WatchlistItem
 
 
 class Ticker(Base):
@@ -31,6 +36,12 @@ class Ticker(Base):
 	)
 	exchange_ref: Mapped[Optional["Exchange"]] = relationship(
 		"Exchange", back_populates="tickers"
+	)
+	watchlist_items: Mapped[List["WatchlistItem"]] = relationship(
+		"WatchlistItem",
+		back_populates="ticker",
+		cascade="all, delete-orphan",
+		lazy="select",
 	)
 
 	__table_args__ = (

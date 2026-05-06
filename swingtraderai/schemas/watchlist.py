@@ -10,6 +10,39 @@ class WatchlistBase(BaseModel):
 	owner_id: Optional[UUID] = None
 
 
+class WatchlistCreate(BaseModel):
+	"""Схема для создания нового watchlist"""
+
+	name: str = Field(
+		..., min_length=1, max_length=100, description="Название списка наблюдения"
+	)
+	description: Optional[str] = Field(
+		None, max_length=500, description="Описание списка"
+	)
+
+	model_config = ConfigDict(from_attributes=True)
+
+
+class WatchlistUpdate(BaseModel):
+	"""Схема для обновления watchlist"""
+
+	name: Optional[str] = Field(None, min_length=1, max_length=100)
+	description: Optional[str] = Field(None, max_length=500)
+
+	model_config = ConfigDict(from_attributes=True)
+
+
+class WatchlistInDB(WatchlistBase):
+	"""Полная схема watchlist из БД"""
+
+	id: UUID
+	owner_id: UUID
+	created_at: datetime
+	updated_at: Optional[datetime] = None
+
+	model_config = ConfigDict(from_attributes=True)
+
+
 class WatchlistOut(WatchlistBase):
 	id: UUID
 	created_at: datetime

@@ -32,8 +32,8 @@ class PositionService:
 		if existing:
 			raise HTTPException(
 				status_code=400,
-				detail=f"Active {position_in.position_type} \
-                    position for this ticker already exists",
+				detail=f"Active {position_in.position_type} "
+				"position for this ticker already exists",
 			)
 
 		# Расчёт total_cost

@@ -87,5 +87,13 @@ class AuthService:
 				status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect old password"
 			)
 
-		user.password_hash = get_password_hash(new_password)
-		return {"msg": "Password changed successfully"}
+		try:
+			user.password_hash = get_password_hash(new_password)
+			await self.user_repo.session.commit()
+			return {"msg": "Password changed successfully"}
+		except Exception:
+			await self.user_repo.session.rollback()
+			raise HTTPException(
+				status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+				detail="Failed to update password",
+			) from Exception

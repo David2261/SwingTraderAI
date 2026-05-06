@@ -1,6 +1,8 @@
 import asyncio
 import os
 import warnings
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Dict, Optional
 from unittest.mock import AsyncMock
 
@@ -11,17 +13,20 @@ import redis
 from dotenv import load_dotenv
 from fastapi import Request
 from httpx import AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.requests import Request as StarletteRequest
 from starlette.types import Scope
 
+from swingtraderai.api.services.ticker_service import TickerService
 from swingtraderai.db.base import Base
-from swingtraderai.db.models.market import Exchange, Ticker
+from swingtraderai.db.models.market import Exchange, MarketData, Ticker
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_session
 from swingtraderai.main import app
 from swingtraderai.schemas.market_data import MARKET_DATA_SCHEMA
+from swingtraderai.schemas.watchlist import WatchlistCreate
 
 load_dotenv()
 
@@ -46,7 +51,8 @@ async def engine():
 	engine = create_async_engine(TEST_DATABASE_URL, future=True)
 
 	async with engine.begin() as conn:
-		await conn.run_sync(Base.metadata.drop_all)
+		await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
+		await conn.execute(text("CREATE SCHEMA public;"))
 		await conn.run_sync(Base.metadata.create_all)
 
 	yield engine
@@ -116,9 +122,77 @@ async def ticker(session: AsyncSession):
 
 	yield test_ticker
 
-	await session.delete(test_ticker)
-	await session.delete(nasdaq)
+
+@pytest.fixture
+async def ticker_service(session: AsyncSession) -> TickerService:
+	return TickerService(session)
+
+
+@pytest.fixture
+async def sample_exchange(session: AsyncSession) -> Exchange:
+	"""Создаёт тестовую биржу"""
+	exchange = Exchange(
+		name="NASDAQ",
+		code="NSDQ",
+		timezone="America/New_York",
+		currency="USD",
+	)
+	session.add(exchange)
 	await session.flush()
+	await session.refresh(exchange)
+	return exchange
+
+
+@pytest.fixture
+async def sample_ticker(session: AsyncSession, sample_exchange: Exchange) -> Ticker:
+	"""Создаёт тестовый тикер AAPL"""
+	ticker = Ticker(
+		symbol="AAPL",
+		asset_type="stock",
+		exchange_id=sample_exchange.id,
+		base_currency="USD",
+		quote_currency="USD",
+		is_active=True,
+	)
+	session.add(ticker)
+	await session.flush()
+	await session.refresh(ticker)
+	return ticker
+
+
+@pytest.fixture
+async def sample_market_data(
+	session: AsyncSession, sample_ticker: Ticker
+) -> list[MarketData]:
+	"""Создаёт исторические данные"""
+	now = datetime.now(timezone.utc)
+	data = []
+
+	for i in range(50):
+		md = MarketData(
+			ticker_id=sample_ticker.id,
+			timeframe="1d",
+			timestamp=now - timedelta(days=i),
+			open=Decimal("150") + Decimal(i),
+			high=Decimal("155") + Decimal(i),
+			low=Decimal("148") + Decimal(i),
+			close=Decimal("152") + Decimal(i) * Decimal("0.5"),
+			volume=Decimal(100_000 + i * 1_000),
+			source="test",
+		)
+		data.append(md)
+
+	session.add_all(data)
+	await session.commit()
+	return data
+
+
+@pytest.fixture
+async def watchlist(watchlist_service, user):
+	watchlist_in = WatchlistCreate(name="Sample Watchlist", description="For testing")
+	return await watchlist_service.create_watchlist(
+		tenant_id=user.tenant_id, user_id=user.id, watchlist_in=watchlist_in
+	)
 
 
 @pytest.fixture

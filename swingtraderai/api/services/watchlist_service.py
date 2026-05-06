@@ -2,7 +2,7 @@ from typing import Any, List
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.api.repositories.watchlist_repository import (
@@ -12,6 +12,7 @@ from swingtraderai.api.repositories.watchlist_repository import (
 from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.schemas.watchlist import (
+	WatchlistCreate,
 	WatchlistDataItem,
 	WatchlistItemCreate,
 	WatchlistItemUpdate,
@@ -52,21 +53,50 @@ class WatchlistService:
 		if existing:
 			raise HTTPException(status_code=400, detail="Ticker already in watchlist")
 
-		watchlist = await self.item_repo.create_watchlist_if_not_exists(
-			tenant_id, user_id
+		watchlist = await self.watchlist_repo.get_or_create_default(tenant_id, user_id)
+
+		item = await self.item_repo.create_watchlist_item(
+			tenant_id=tenant_id,
+			watchlist_id=watchlist.id,
+			ticker_id=item_in.ticker_id,
+			notes=item_in.notes,
+			reason=item_in.reason,
+			target_price=item_in.target_price,
+			stop_loss=item_in.stop_loss,
 		)
 
-		item_data = {
-			"watchlist_id": watchlist.id,
-			"ticker_id": item_in.ticker_id,
-			"notes": item_in.notes,
-			"reason": item_in.reason,
-			"target_price": item_in.target_price,
-			"stop_loss": item_in.stop_loss,
-		}
-
-		item = await self.item_repo.create(tenant_id, item_data)
 		return item
+
+	async def create_watchlist(
+		self, tenant_id: UUID, user_id: UUID, watchlist_in: WatchlistCreate
+	) -> Watchlist:
+		"""Создать новый watchlist"""
+		query = select(Watchlist).where(
+			and_(
+				Watchlist.tenant_id == tenant_id,
+				Watchlist.owner_id == user_id,
+				Watchlist.name == watchlist_in.name,
+			)
+		)
+		result = await self.session.execute(query)
+		existing = result.scalar_one_or_none()
+
+		if existing:
+			raise HTTPException(
+				status_code=400,
+				detail=f"Watchlist with name '{watchlist_in.name}' already exists",
+			)
+		watchlist = Watchlist(
+			tenant_id=tenant_id,
+			owner_id=user_id,
+			name=watchlist_in.name,
+			description=watchlist_in.description,
+		)
+		self.session.add(watchlist)
+		await self.session.commit()
+		await self.session.refresh(watchlist)
+
+		return watchlist
 
 	async def get_user_items(
 		self, tenant_id: UUID, user_id: UUID
@@ -113,6 +143,26 @@ class WatchlistService:
 			raise HTTPException(status_code=403, detail="Not your watchlist item")
 
 		return await self.item_repo.delete(tenant_id, item_id)
+
+	async def get_or_create_default_watchlist(
+		self, tenant_id: UUID, user_id: UUID
+	) -> Watchlist:
+		"""
+		Получает или создает дефолтный watchlist для пользователя.
+		"""
+		default = await self.watchlist_repo.get_or_create_default(tenant_id, user_id)
+
+		if not default:
+			watchlist_data = {
+				"name": "Default Watchlist",
+				"description": "Your default watchlist",
+				"owner_id": user_id,
+				"tenant_id": tenant_id,
+				"is_default": True,
+			}
+			default = await self.watchlist_repo.create(tenant_id, watchlist_data)
+
+		return default
 
 	async def get_watchlist_with_prices(
 		self,

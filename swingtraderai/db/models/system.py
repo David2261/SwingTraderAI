@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
-from sqlalchemy import TIMESTAMP, Float, ForeignKey, String, Text
+from sqlalchemy import TIMESTAMP, Float, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
 from swingtraderai.db.base import TenantBase
-from swingtraderai.db.models.market import Ticker
+
+if TYPE_CHECKING:
+	from swingtraderai.db.models.market import Ticker
 
 
 class Notification(TenantBase):
@@ -33,8 +38,12 @@ class Watchlist(TenantBase):
 	id: Mapped[uuid.UUID] = mapped_column(
 		UUID(as_uuid=True), primary_key=True, default=uuid7
 	)
-	name: Mapped[str | None] = mapped_column(String(50))
-	owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+	name: Mapped[str] = mapped_column(String(100), nullable=False)
+	description: Mapped[str | None] = mapped_column(Text, nullable=True)
+	owner_id: Mapped[uuid.UUID] = mapped_column(
+		UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+	)
+	is_default: Mapped[bool] = mapped_column(default=False, nullable=False)
 	created_at: Mapped[datetime] = mapped_column(
 		TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
 	)
@@ -42,6 +51,13 @@ class Watchlist(TenantBase):
 		"WatchlistItem",
 		back_populates="watchlist",
 		cascade="all, delete-orphan",
+		lazy="selectin",
+	)
+
+	__table_args__ = (
+		Index("ix_watchlists_owner_id", "owner_id"),
+		Index("ix_watchlists_tenant_owner", "tenant_id", "owner_id"),
+		Index("ix_watchlists_is_default", "is_default"),
 	)
 
 

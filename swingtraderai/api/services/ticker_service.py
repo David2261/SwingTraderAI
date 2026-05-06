@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 from uuid import UUID
 
@@ -139,7 +139,7 @@ class TickerService:
 			"period": period,
 			"indicators": result_indicators,
 			"data_points": len(prices),
-			"timestamp": datetime.utcnow(),
+			"timestamp": datetime.now(timezone.utc),
 		}
 
 	async def get_trading_signals(
@@ -179,5 +179,5 @@ class TickerService:
 			"signal": "buy",  # buy / sell / hold
 			"confidence": 0.78,
 			"reason": "Bullish pattern detected by AI model",
-			"timestamp": datetime.utcnow(),
+			"timestamp": datetime.now(timezone.utc),
 		}

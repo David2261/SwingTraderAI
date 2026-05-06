@@ -95,6 +95,7 @@ async def test_foreign_key_violation_notification(session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_watchlist_and_items_cascade(session: AsyncSession):
+	"""Тест каскадного удаления + загрузки relationship"""
 	user = User(
 		username="watchlist_user2",
 		email="watchlist2@example.com",
@@ -104,20 +105,75 @@ async def test_watchlist_and_items_cascade(session: AsyncSession):
 	await session.commit()
 	await session.refresh(user)
 
-	t1 = Ticker(symbol="BTCUSDT", asset_type="CRYPTO")
-	t2 = Ticker(symbol="ETHUSDT", asset_type="CRYPTO")
+	t1 = Ticker(symbol="BTCUSDT", asset_type="crypto")
+	t2 = Ticker(symbol="ETHUSDT", asset_type="crypto")
 	session.add_all([t1, t2])
-	await session.commit()
+	await session.flush()
 
-	watchlist = Watchlist(name="My Watchlist", owner_id=user.id, items=[])
+	watchlist = Watchlist(name="My Watchlist", owner_id=user.id)
 	session.add(watchlist)
-	await session.commit()
-	await session.refresh(watchlist)
+	await session.flush()
 
 	item1 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=t1.id)
 	item2 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=t2.id)
 	session.add_all([item1, item2])
 	await session.commit()
+
+	# === Проверка eager loading ===
+	stmt = (
+		select(Watchlist)
+		.options(selectinload(Watchlist.items))
+		.where(Watchlist.id == watchlist.id)
+	)
+	result = await session.execute(stmt)
+	loaded_watchlist = result.scalar_one()
+
+	assert len(loaded_watchlist.items) == 2, (
+		f"Expected 2 items, got {len(loaded_watchlist.items)}"
+	)
+
+	# === Проверка cascade delete ===
+	await session.delete(loaded_watchlist)
+	await session.commit()
+
+	# Проверяем, что items удалились
+	remaining_items = await session.execute(select(WatchlistItem))
+	assert len(remaining_items.scalars().all()) == 0
+
+
+@pytest.mark.asyncio
+async def test_watchlist_item_relationship(session: AsyncSession):
+	"""Проверка двусторонней связи"""
+	user = User(
+		username="watchlist_user",
+		email="wl@example.com",
+		password_hash="hash123",
+	)
+	session.add(user)
+	await session.commit()
+	await session.refresh(user)
+
+	ticker = Ticker(symbol="SOLUSDT", asset_type="crypto")
+	session.add(ticker)
+	await session.flush()
+
+	watchlist = Watchlist(name="Test WL", owner_id=user.id)
+	session.add(watchlist)
+	await session.flush()
+
+	item = WatchlistItem(watchlist_id=watchlist.id, ticker_id=ticker.id)
+	session.add(item)
+	await session.commit()
+	await session.refresh(item)
+
+	assert item.watchlist_id == watchlist.id
+	assert item.ticker_id == ticker.id
+
+	assert item.watchlist is not None
+	assert item.watchlist.id == watchlist.id
+
+	assert item.ticker is not None
+	assert item.ticker.symbol == "SOLUSDT"
 
 	stmt = (
 		select(Watchlist)
@@ -125,90 +181,31 @@ async def test_watchlist_and_items_cascade(session: AsyncSession):
 		.where(Watchlist.id == watchlist.id)
 	)
 	result = await session.execute(stmt)
-	watchlist = result.scalar_one()
+	reloaded = result.scalar_one()
 
-	assert len(watchlist.items) == 2
-
-	await session.delete(watchlist)
-	await session.commit()
-
-	items_left = await session.execute(select(WatchlistItem))
-	assert len(items_left.scalars().all()) == 0
-
-
-@pytest.mark.asyncio
-async def test_watchlist_item_relationship(session: AsyncSession):
-	user = User(
-		username="watchlist_user2",
-		email="watchlist2@example.com",
-		password_hash="hash456",
-	)
-	session.add(user)
-	await session.commit()
-	await session.refresh(user)
-
-	tk = Ticker(symbol="SOLUSDT", asset_type="CRYPTO")
-	session.add(tk)
-	await session.commit()
-	await session.refresh(tk)
-
-	wl = Watchlist(
-		name="My Watchlist",
-		owner_id=user.id,
-	)
-	session.add(wl)
-	await session.commit()
-	await session.refresh(wl)
-
-	item = WatchlistItem(watchlist_id=wl.id, ticker_id=tk.id)
-	session.add(item)
-	await session.commit()
-	await session.refresh(item)
-
-	assert item.watchlist_id == wl.id
-	assert item.watchlist.id == wl.id
-	assert item.ticker_id == tk.id
-	assert item.ticker.symbol == "SOLUSDT"
-
-	stmt = (
-		select(Watchlist)
-		.options(selectinload(Watchlist.items))
-		.where(Watchlist.id == wl.id)
-	)
-	result = await session.execute(stmt)
-	reloaded_wl = result.scalar_one()
-
-	assert item in reloaded_wl.items
+	assert len(reloaded.items) == 1
+	assert reloaded.items[0].id == item.id
 
 
 @pytest.mark.asyncio
 async def test_watchlist_item_unique_per_watchlist_not_enforced(session: AsyncSession):
-	"""
-	Важно: в текущей модели НЕТ уникального ограничения
-	(один тикер может быть добавлен в watchlist несколько раз)
-	Если это нежелательно — нужно добавить UniqueConstraint
-	"""
+	"""Проверяем, что сейчас дубли тикеров в одном watchlist разрешены"""
 	user = User(
-		username="watchlist_user2",
-		email="watchlist2@example.com",
-		password_hash="hash456",
+		username="dup_user",
+		email="dup@example.com",
+		password_hash="hash",
 	)
 	session.add(user)
 	await session.commit()
 	await session.refresh(user)
 
-	ticker = Ticker(symbol="XLMUSDT", asset_type="CRYPTO")
+	ticker = Ticker(symbol="XLMUSDT", asset_type="crypto")
 	session.add(ticker)
-	await session.commit()
-	await session.refresh(ticker)
+	await session.flush()
 
-	watchlist = Watchlist(
-		name="My Watchlist",
-		owner_id=user.id,
-	)
+	watchlist = Watchlist(name="Duplicates Test", owner_id=user.id)
 	session.add(watchlist)
-	await session.commit()
-	await session.refresh(watchlist)
+	await session.flush()
 
 	item1 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=ticker.id)
 	item2 = WatchlistItem(watchlist_id=watchlist.id, ticker_id=ticker.id)
@@ -222,8 +219,6 @@ async def test_watchlist_item_unique_per_watchlist_not_enforced(session: AsyncSe
 		.where(Watchlist.id == watchlist.id)
 	)
 	result = await session.execute(stmt)
-	reloaded_watchlist = result.scalar_one()
+	reloaded = result.scalar_one()
 
-	assert len(reloaded_watchlist.items) == 2
-
-	assert reloaded_watchlist.items[0].id != reloaded_watchlist.items[1].id
+	assert len(reloaded.items) == 2

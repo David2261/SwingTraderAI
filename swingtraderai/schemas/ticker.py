@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class TickerBase(BaseModel):
 	symbol: str = Field(..., max_length=20)
 	asset_type: str = Field(..., max_length=10)
-	exchange: Optional[str] = Field(None, max_length=20)
+	exchange_id: Optional[UUID] = Field(None)
 	base_currency: Optional[str] = Field(None, max_length=10)
 	quote_currency: Optional[str] = Field(None, max_length=10)
 	is_active: bool = True
@@ -32,6 +32,7 @@ class OHLCVDataOut(BaseModel):
 	low: Optional[float]
 	close: Optional[float]
 	volume: Optional[float]
+	ticker_id: UUID
 
 	model_config = ConfigDict(from_attributes=True)
 

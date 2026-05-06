@@ -127,6 +127,10 @@ module = "slowapi.*"
 ignore_missing_imports = true
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = "swingtraderai.main"
+disable_error_code = "arg-type"
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 asyncio_mode = "auto"

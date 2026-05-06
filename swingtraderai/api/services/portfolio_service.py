@@ -79,30 +79,32 @@ class PortfolioService:
 		assets_dict: dict[str, dict[str, Decimal]] = {}
 
 		for position, asset_type, current_price in rows:
-			current_price = Decimal(str(current_price or 0))
-			qty = Decimal(str(position.quantity))
-			avg_price = Decimal(str(position.average_entry_price))
-
-			# Расчёт текущей стоимости и PnL
-			if position.position_type == "long":
-				position_value = qty * current_price
-				unrealized_pnl = (current_price - avg_price) * qty
+			if current_price is None:
+				position_value = Decimal("0")
+				unrealized_pnl = Decimal("0")
 			else:
-				position_value = qty * current_price
-				unrealized_pnl = (avg_price - current_price) * qty
+				current_price = Decimal(str(current_price or 0))
+				qty = Decimal(str(position.quantity))
+				avg_price = Decimal(str(position.average_buy_price))
 
-			total_value += position_value
-			total_unrealized_pnl += unrealized_pnl
+				if position.position_type == "long":
+					position_value = qty * current_price
+					unrealized_pnl = (current_price - avg_price) * qty
+				else:
+					position_value = qty * current_price
+					unrealized_pnl = (avg_price - current_price) * qty
 
-			# Группировка по asset_type
-			if asset_type not in assets_dict:
-				assets_dict[asset_type] = {
-					"value": Decimal("0"),
-					"pnl": Decimal("0"),
-				}
+				total_value += position_value
+				total_unrealized_pnl += unrealized_pnl
 
-			assets_dict[asset_type]["value"] += position_value
-			assets_dict[asset_type]["pnl"] += unrealized_pnl
+				if asset_type not in assets_dict:
+					assets_dict[asset_type] = {
+						"value": Decimal("0"),
+						"pnl": Decimal("0"),
+					}
+
+				assets_dict[asset_type]["value"] += position_value
+				assets_dict[asset_type]["pnl"] += unrealized_pnl
 
 		assets: List[PortfolioAsset] = []
 		for asset_type, data in assets_dict.items():
