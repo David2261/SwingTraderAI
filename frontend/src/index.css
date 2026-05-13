@@ -1,0 +1,312 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'ZT Nature';
+  src: url('/fonts/ZTNature-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 229 95% 8%;
+
+    --card: 224 100% 99%;
+    --card-foreground: 229 95% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 229 95% 8%;
+
+    --primary: 199 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 226 100% 39%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 221 100% 57%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 222 20% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 40% 90%;
+    --input: 220 40% 90%;
+    --ring: 199 100% 56%;
+
+    --positive: 142 71% 45%;
+    --negative: 0 84% 60%;
+    --neutral: 215 16% 47%;
+
+    --radius: 0.75rem;
+
+    --heading: 'ZT Nature', serif;
+    --body: 'Poppins', sans-serif;
+
+    --text-h: #010825;
+    --code-bg: #eff6ff;
+  }
+
+  .dark {
+    --background: 229 95% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 226 75% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 226 75% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 199 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 221 100% 57%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 226 100% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 226 30% 18%;
+    --muted-foreground: 215 20% 70%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 226 30% 20%;
+    --input: 226 30% 20%;
+    --ring: 199 100% 56%;
+
+    --positive: 142 71% 45%;
+    --negative: 0 84% 60%;
+    --neutral: 215 16% 60%;
+
+    --text-h: #f8fafc;
+    --code-bg: #0f172a;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer components {
+  .glass {
+    background-color: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .card {
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-primary:hover {
+    background-color: hsl(var(--primary) / 0.9);
+  }
+
+  .btn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+  }
+
+  .btn-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.8);
+  }
+
+  .btn-destructive {
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+  }
+
+  .btn-destructive:hover {
+    background-color: hsl(var(--destructive) / 0.9);
+  }
+
+  .input {
+    display: flex;
+    height: 2.5rem;
+    width: 100%;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid hsl(var(--input));
+    background-color: hsl(var(--background));
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .input:focus-visible {
+    outline: none;
+    ring: 2px solid hsl(var(--ring));
+    ring-offset: 2px;
+  }
+
+  .input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .input::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted));
+  }
+}
+
+body {
+  margin: 0;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--body);
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+.gradient-primary {
+  background: linear-gradient(
+    135deg,
+    #1CB4FF 0%,
+    #2667FF 50%,
+    #002EC9 100%
+  );
+}
+
+::selection {
+  background: #1CB4FF;
+  color: white;
+}
+
+/* Плавная подсветка для input */
+.input-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-glow:focus {
+  border-color: #1CB4FF !important;
+  box-shadow: 0 0 0 3px rgba(28, 180, 255, 0.3);
+  outline: none;
+  animation: gentlePulse 0.4s ease-out;
+}
+
+@keyframes gentlePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(28, 180, 255, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(28, 180, 255, 0.15);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(28, 180, 255, 0.3);
+    transform: scale(1);
+  }
+}
+
+/* Эффект для автозаполнения */
+.input-glow:-webkit-autofill {
+  transition: all 0s 50000s;
+  -webkit-text-fill-color: white;
+}

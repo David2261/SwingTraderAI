@@ -105,7 +105,7 @@ strict = true
 ignore_missing_imports = true
 disallow_untyped_decorators = false
 plugins = ["pydantic.mypy"]
-exclude = ["tests/.*", "alembic/.*", "celery/.*", ".tools/.*"]
+exclude = ["tests/.*", "alembic/.*", "celery/.*", ".tools/.*", "frontend/*"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -114,7 +114,7 @@ warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
 [[tool.mypy.overrides]]
-module = ["tests.*", "alembic.*", "celery.*", ".tools/.*"]
+module = ["tests.*", "alembic.*", "celery.*", ".tools/.*", "frontend/*"]
 ignore_errors = true
 disallow_untyped_defs = false
 check_untyped_defs = false
