@@ -1,4 +1,3 @@
-import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
@@ -10,22 +9,15 @@ from uuid6 import uuid7
 from swingtraderai.core.config import settings
 from swingtraderai.schemas.auth import JWTPayload
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-	password_verify = pwd_context.verify(plain_password, hashed_password)
-	return bool(password_verify)
+	return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def get_password_hash(password: str) -> str:
-	if len(password.encode()) > 72:
-		raise ValueError("Password too long for encryption")
-	safe_password = password[:72]
-
-	with warnings.catch_warnings():
-		warnings.filterwarnings("ignore", message="trapped.*bcrypt version")
-		password_hash = pwd_context.hash(safe_password)
+	password_hash = pwd_context.hash(password)
 
 	return str(password_hash)
 

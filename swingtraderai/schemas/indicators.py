@@ -32,7 +32,7 @@ class IndicatorRequest(BaseModel):
 		description="Список запрашиваемых индикаторов",
 	)
 	timeframe: str = "1h"
-	limit: int = 500
+	limit: int = Field(500, ge=100, le=2000)
 
 
 class SignalOut(BaseModel):

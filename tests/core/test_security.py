@@ -1,5 +1,4 @@
 import uuid
-import warnings
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -146,9 +145,3 @@ def test_subject_can_be_anything_convertible_to_str():
 	token2 = create_access_token({"id": 42})
 	decoded2 = jwt.decode(token2, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 	assert decoded2["sub"] == "{'id': 42}"
-
-
-def test_get_password_hash_does_not_raise_on_bcrypt_warning():
-	with warnings.catch_warnings(record=True) as w:
-		get_password_hash("password")
-		assert len(w) == 0
