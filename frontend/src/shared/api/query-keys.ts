@@ -26,4 +26,45 @@ export const queryKeys = {
   indicators: {
     ticker: (symbol: string) => ['indicators', symbol] as const,
   },
+  dashboard: {
+    overview: ['dashboard', 'overview'] as const,
+    signals: ['dashboard', 'signals'] as const,
+    heatmap: ['dashboard', 'heatmap'] as const,
+    explainability: ['dashboard', 'explainability'] as const,
+    alerts: ['dashboard', 'alerts'] as const,
+    quickActions: ['dashboard', 'actions'] as const,
+  },
+  markets: {
+    list: ['markets'] as const,
+  },
+  analytics: {
+    summary: ['analytics', 'summary'] as const,
+    snapshot: ['analytics', 'snapshot'] as const,
+    pulse: ['analytics', 'pulse'] as const,
+  },
+  ai: {
+    history: ['ai', 'history'] as const,
+    prompts: ['ai', 'prompts'] as const,
+  },
+  scanner: {
+    results: ['scanner', 'results'] as const,
+  },
+  signals: {
+    history: ['signals', 'history'] as const,
+  },
+  aiLab: {
+    models: ['ai-lab', 'models'] as const,
+    trainingJobs: ['ai-lab', 'training-jobs'] as const,
+  },
+  alerts: {
+    active: ['alerts', 'active'] as const,
+  },
+  journal: {
+    entries: ['journal', 'entries'] as const,
+  },
+  admin: {
+    profile: ['admin', 'profile'] as const,
+    support: ['admin', 'support'] as const,
+    strategies: ['admin', 'strategies'] as const,
+  },
 }

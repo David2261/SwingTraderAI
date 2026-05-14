@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/shared/api/api-client'
+import { mockApi } from '@/shared/api/mock-api'
 import { queryKeys } from '@/shared/api/query-keys'
 import type { CreatePositionRequest, Position, PortfolioSummary, UpdatePositionRequest } from '@/shared/api/api-client-types'
 
 export function usePortfolioPositions() {
   return useQuery<Position[]>({
     queryKey: queryKeys.portfolio.positions,
-    queryFn: apiClient.portfolio.getPositions,
+    queryFn: mockApi.portfolio.getPositions,
     staleTime: 3 * 60 * 1000,
     retry: 2,
   })
@@ -15,11 +15,12 @@ export function usePortfolioPositions() {
 export function usePortfolioSummary() {
   return useQuery<PortfolioSummary>({
     queryKey: queryKeys.portfolio.summary,
-    queryFn: apiClient.portfolio.getSummary,
+    queryFn: mockApi.portfolio.getSummary,
     staleTime: 5 * 60 * 1000,
     retry: 2,
   })
 }
+
 
 export function useAddPosition() {
   const queryClient = useQueryClient()

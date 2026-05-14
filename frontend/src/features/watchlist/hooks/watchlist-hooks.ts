@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/shared/api/api-client'
+import { mockApi } from '@/shared/api/mock-api'
 import { queryKeys } from '@/shared/api/query-keys'
 import type { CreateWatchlistRequest, WatchlistItem } from '@/shared/api/api-client-types'
 
 export function useWatchlist() {
   return useQuery<WatchlistItem[]>({
     queryKey: queryKeys.watchlist.list,
-    queryFn: apiClient.watchlist.getAll,
+    queryFn: mockApi.watchlist.getAll,
     staleTime: 3 * 60 * 1000,
     retry: 2,
   })
