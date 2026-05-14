@@ -20,6 +20,6 @@ export const tokenManager = {
   },
 
   isAuthenticated: (): boolean => {
-    return !!tokenManager.getAccessToken()
+    return !!storage.get<string>('access_token')
   },
 }

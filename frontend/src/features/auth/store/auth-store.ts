@@ -35,10 +35,25 @@ export const useAuthStore = create<AuthState>()(
         },
 
         checkAuth: () => {
-          const hasToken = tokenManager.isAuthenticated()
-          set({ isAuthenticated: hasToken, isLoading: false })
-          return hasToken
-        },
+            const hasToken = tokenManager.isAuthenticated()
+
+            if (!hasToken) {
+                set({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                })
+
+                return false
+            }
+
+            set({
+                isAuthenticated: true,
+                isLoading: false,
+            })
+
+            return true
+            },
       }),
       {
         name: 'auth-storage',

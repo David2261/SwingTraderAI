@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/auth-store'
 import { Spinner } from '@/shared/ui/spinner'
@@ -8,14 +7,8 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAuthStore()
   const location = useLocation()
-
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      checkAuth()
-    }
-  }, [isAuthenticated, isLoading, checkAuth])
 
   if (isLoading) {
     return (

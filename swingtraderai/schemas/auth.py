@@ -10,7 +10,7 @@ from swingtraderai.db.models.user import UserRole
 class UserBase(BaseModel):
 	username: str = Field(..., min_length=3, max_length=50)
 	email: EmailStr
-	telegram_id: Optional[int] = Field(None)
+	telegram_id: int | None = None
 
 
 class UserCreate(UserBase):

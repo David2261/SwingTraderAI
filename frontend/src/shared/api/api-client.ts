@@ -48,31 +48,69 @@ import { indicatorSchema, indicatorSummarySchema } from '@/features/indicators/s
 export const apiClient = {
   auth: {
     login: async (data: LoginRequest) => {
-      const request = loginRequestSchema.parse(data)
-      const response = await api.post('/auth/login', request)
-      return parseResponse<AuthResponse>(authResponseSchema, response.data)
+        const request = loginRequestSchema.parse(data)
+
+        const formData = new URLSearchParams()
+
+        formData.append('username', request.email)
+        formData.append('password', request.password)
+        formData.append('grant_type', 'password')
+
+        const response = await api.post(
+        '/auth/login',
+        formData,
+        {
+            headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            },
+        }
+        )
+
+        return parseResponse<AuthResponse>(
+        authResponseSchema,
+        response.data
+        )
     },
 
+
     register: async (data: RegisterRequest) => {
-      const request = registerRequestSchema.parse(data)
-      const response = await api.post('/auth/register', request)
-      return parseResponse<AuthResponse>(authResponseSchema, response.data)
+        const request = registerRequestSchema.parse(data)
+
+        const response = await api.post(
+            '/auth/register',
+            request
+        )
+
+        console.log('Register raw response:', response.data)
+
+        return parseResponse<AuthResponse>(
+            authResponseSchema,
+            response.data
+        )
     },
 
     logout: async () => {
-      await api.post('/auth/logout')
+        await api.post('/auth/logout')
     },
 
     refresh: async () => {
-      const response = await api.post('/auth/refresh')
-      return parseResponse<AuthResponse>(authResponseSchema, response.data)
+        const response = await api.post('/auth/refresh')
+
+        return parseResponse<AuthResponse>(
+        authResponseSchema,
+        response.data
+        )
     },
 
     me: async () => {
-      const response = await api.get('/auth/me')
-      return parseResponse<User>(userSchema, response.data)
+        const response = await api.get('/users/me')
+
+        return parseResponse<User>(
+        userSchema,
+        response.data
+        )
     },
-  },
+    },
 
   tickers: {
     search: async (query: string) => {

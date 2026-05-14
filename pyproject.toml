@@ -167,6 +167,7 @@ filterwarnings = [
 	"ignore:'crypt' is deprecated:DeprecationWarning",
 	"ignore::UserWarning:pandas_ta.*",
 	"ignore:.*mode.copy_on_write.*:pandas.errors.Pandas4Warning",
+	"ignore:Accessing argon2.__version__:DeprecationWarning",
 ]
 
 norecursedirs = [

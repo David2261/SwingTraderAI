@@ -46,7 +46,7 @@ class User(TenantBase):
 	)
 	password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 	telegram_id: Mapped[BigInteger | None] = mapped_column(
-		BigInteger, unique=True, nullable=True, index=True
+		BigInteger, nullable=True, index=False
 	)
 	telegram_verified: Mapped[bool] = mapped_column(
 		Boolean, default=False, nullable=False
@@ -113,7 +113,12 @@ class User(TenantBase):
 		Index("ix_users_is_banned", "is_banned"),
 		UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
 		UniqueConstraint("tenant_id", "username", name="uq_users_tenant_username"),
-		UniqueConstraint("tenant_id", "telegram_id", name="uq_users_tenant_telegram"),
+		Index(
+			"ix_users_telegram_id",
+			"telegram_id",
+			unique=True,
+			postgresql_where=text("telegram_id IS NOT NULL"),
+		),
 	)
 
 

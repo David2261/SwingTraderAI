@@ -30,7 +30,9 @@ export function LoginPage() {
   const onSubmit = (data: LoginFormData) => {
     loginMutation.mutate(data, {
       onSuccess: () => {
-        navigate(from, { replace: true })
+        setTimeout(() => {
+            navigate(from, { replace: true })
+        }, 50)
       },
     })
   }

@@ -20,30 +20,12 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true,
-        element: <DashboardPage />,
-      },
-      {
-        path: 'dashboard',
-        element: <DashboardPage />,
-      },
-      {
-        path: 'watchlist',
-        element: <WatchlistPage />,
-      },
-      {
-        path: 'portfolio',
-        element: <PortfolioPage />,
-      },
-      {
-        path: 'ticker/:id',
-        element: <TickerPage />,
-      },
-      {
-        path: 'settings',
-        element: <SettingsPage />,
-      },
+      { index: true, element: <DashboardPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'watchlist', element: <WatchlistPage /> },
+      { path: 'portfolio', element: <PortfolioPage /> },
+      { path: 'ticker/:id', element: <TickerPage /> },
+      { path: 'settings', element: <SettingsPage /> },
     ],
   },
   {
@@ -60,8 +42,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: '*',
-    element: <NotFoundPage />,
-  },
+
+  { path: '*', element: <NotFoundPage /> },
 ])

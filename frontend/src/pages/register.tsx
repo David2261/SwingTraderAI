@@ -38,15 +38,16 @@ export function RegisterPage() {
 	resolver: zodResolver(registerFormSchema),
   })
 
-  const onSubmit = (data: RegisterFormData) => {
-	const { confirmPassword, ...registerData } = data
-
-	registerMutation.mutate(registerData, {
-	  onSuccess: () => {
-		navigate('/dashboard')
-	  },
-	})
+  const onSubmit = (data) => {
+  const registerData = {
+    username: `${data.first_name}${data.last_name}`.toLowerCase().replace(/\s+/g, ''),
+    email: data.email,
+    password: data.password,
+    telegram_id: null,
   }
+
+  registerMutation.mutate(registerData)
+}
 
   return (
 	<div
