@@ -1,4 +1,4 @@
-import { ArrowUpRight, Globe2, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
 import { SignalBadge } from '@/shared/ui/signal-badge'
@@ -45,7 +45,7 @@ export function MarketsPage() {
                   <p className="text-sm text-slate-400">{item.symbol}</p>
                   <p className="mt-1 font-semibold text-white">{item.name}</p>
                 </div>
-                <SignalBadge signal={item.status === 'Bullish' ? 'BUY' : item.status === 'Bearish' ? 'SELL' : 'NEUTRAL'} />
+                <SignalBadge signal={item.regime === 'Bullish' ? 'BUY' : item.regime === 'Bearish' ? 'SELL' : 'NEUTRAL'} />
               </div>
             ))}
           </div>

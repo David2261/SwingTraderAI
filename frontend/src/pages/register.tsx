@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
@@ -26,8 +26,6 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const navigate = useNavigate()
-
   const registerMutation = useRegister()
 
   const {
@@ -38,7 +36,7 @@ export function RegisterPage() {
 	resolver: zodResolver(registerFormSchema),
   })
 
-  const onSubmit = (data) => {
+  const onSubmit = (data: any) => {
   const registerData = {
     username: `${data.first_name}${data.last_name}`.toLowerCase().replace(/\s+/g, ''),
     email: data.email,

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mockApi } from '@/shared/api/mock-api'
 import { queryKeys } from '@/shared/api/query-keys'
+import { apiClient } from '@/shared/api/api-client'
 import type { CreatePositionRequest, Position, PortfolioSummary, UpdatePositionRequest } from '@/shared/api/api-client-types'
 
 export function usePortfolioPositions() {

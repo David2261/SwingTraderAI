@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { tokenManager } from '@/shared/api/tokens'
-import type { User } from '@/shared/api/api-client'
+import type { User } from '../schemas/api-schemas'
 
 interface AuthState {
   user: User | null
@@ -16,7 +16,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set, _) => ({
         user: null,
         isAuthenticated: false,
         isLoading: true,

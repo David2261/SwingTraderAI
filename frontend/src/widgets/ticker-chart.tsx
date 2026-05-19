@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { createChart, type IChartApi, type ISeriesApi, type CandlestickData } from 'lightweight-charts'
+import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, CandlestickSeries, type UTCTimestamp } from 'lightweight-charts'
 import { type Candle } from '@/shared/api/api-client-types'
 
 interface TickerChartProps {
@@ -17,7 +17,7 @@ export function TickerChart({ candles, onSelectTimeframe, selectedTimeframe }: T
 
   const seriesData = useMemo<CandlestickData[]>(() => {
     return candles.map((candle) => ({
-      time: Math.floor(candle.timestamp / 1000),
+      time: Math.floor(candle.timestamp / 1000) as UTCTimestamp,
       open: candle.open,
       high: candle.high,
       low: candle.low,
@@ -51,7 +51,7 @@ export function TickerChart({ candles, onSelectTimeframe, selectedTimeframe }: T
       },
     })
 
-    candleSeries.current = chartInstance.current.addCandlestickSeries({
+    candleSeries.current = chartInstance.current.addSeries(CandlestickSeries, {
       upColor: 'hsl(142, 76%, 36%)',
       downColor: 'hsl(0, 84%, 60%)',
       borderDownColor: 'hsl(0, 84%, 60%)',

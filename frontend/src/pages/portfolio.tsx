@@ -232,7 +232,9 @@ export function PortfolioPage() {
           <div className="grid gap-6 sm:grid-cols-3 mt-8">
             <div className="text-center">
               <p className="text-4xl font-bold text-orange-400">
-                {Math.max(...positions.map((p) => p.allocation_percent), 0)}%
+                {positions.length > 0
+                  ? Math.max(...positions.map((p) => p.allocation_percent ?? 0))
+                  : 0}%
               </p>
               <p className="text-sm text-slate-400 mt-2">Largest Position</p>
             </div>

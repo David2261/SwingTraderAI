@@ -4,15 +4,15 @@ import { apiClient } from '@/shared/api/api-client'
 import { useAuthStore } from '../store/auth-store'
 import { tokenManager } from '@/shared/api/tokens'
 import { errorHandler } from '@/shared/api/error-handler'
-import type { LoginSchema, RegisterSchema } from '@/shared/api/api-client'
-import type { RegisterRequest } from '../schemas/api-schemas'
+import type { LoginRequest, RegisterRequest } from '../schemas/api-schemas'
+import { useEffect } from 'react'
 
 
 export function useLogin() {
   const login = useAuthStore((state) => state.login)
 
   return useMutation({
-    mutationFn: async (data: LoginSchema) => {
+    mutationFn: async (data: LoginRequest) => {
       const response = await apiClient.auth.login(data)
       tokenManager.setTokens(response.access_token, response.refresh_token)
       return response
@@ -72,6 +72,7 @@ export function useLogout() {
 
   return useMutation({
 	mutationFn: apiClient.auth.logout,
+
 	onSuccess: () => {
 	  logout()
 	},
@@ -87,21 +88,22 @@ export function useUser() {
   const { user, isAuthenticated, checkAuth } = useAuthStore()
 
   const query = useQuery({
-	queryKey: ['user'],
-	queryFn: apiClient.auth.me,
-	enabled: isAuthenticated,
-	staleTime: 5 * 60 * 1000, // 5 minutes
-	onSuccess: (data) => {
-	  // Update user data if needed
-	},
-	onError: () => {
-	  checkAuth()
-	},
+    queryKey: ['user'],
+    queryFn: () => apiClient.auth.me(),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   })
 
+  useEffect(() => {
+    if (query.error && isAuthenticated) {
+      checkAuth()
+    }
+  }, [query.error, isAuthenticated, checkAuth])
+
   return {
-	...query,
-	user: query.data || user,
+    ...query,
+    user: query.data || user,
   }
 }
 

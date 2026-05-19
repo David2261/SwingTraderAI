@@ -1,10 +1,9 @@
-import { Activity, Filter, Search } from 'lucide-react'
+import { Activity, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
-import { SignalBadge } from '@/shared/ui/signal-badge'
 import { useScannerResults } from '@/features/scanner/hooks/scanner-hooks'
 
 const filters = ['RSI oversold', 'EMA crossover', 'MACD bullish', 'Volume spike', 'Breakout'] as const

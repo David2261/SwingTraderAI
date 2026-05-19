@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mockApi } from '@/shared/api/mock-api'
+import { apiClient } from '@/shared/api/api-client'
 import { queryKeys } from '@/shared/api/query-keys'
 import type { CreateWatchlistRequest, WatchlistItem } from '@/shared/api/api-client-types'
 

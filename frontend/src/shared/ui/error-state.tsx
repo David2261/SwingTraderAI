@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from './button'
 import { cn } from '@/shared/lib/cn'

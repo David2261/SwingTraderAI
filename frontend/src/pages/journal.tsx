@@ -1,4 +1,4 @@
-import { BookOpen, HeartPulse } from 'lucide-react'
+import { HeartPulse } from 'lucide-react'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
 import { useJournalEntries } from '@/features/journal/hooks/journal-hooks'

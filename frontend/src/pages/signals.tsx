@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bell, Clock3, LineChart } from 'lucide-react'
+import { LineChart } from 'lucide-react'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
 import { SignalBadge } from '@/shared/ui/signal-badge'

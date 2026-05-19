@@ -6,7 +6,7 @@ interface SectionCardProps {
   title: string
   description?: string
   actions?: React.ReactNode
-  children: React.ReactNode
+  children?: React.ReactNode
   className?: string
 }
 

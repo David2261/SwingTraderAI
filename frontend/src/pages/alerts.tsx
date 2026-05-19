@@ -1,4 +1,4 @@
-import { Bell, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
 import { useActiveAlerts } from '@/features/alerts/hooks/alerts-hooks'

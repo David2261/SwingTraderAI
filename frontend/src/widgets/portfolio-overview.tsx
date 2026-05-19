@@ -1,4 +1,4 @@
-import { AreaChart, DollarSign, TrendingUp } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
 import { usePortfolioSummary } from '@/features/portfolio/hooks/portfolio-hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -24,22 +24,28 @@ export function PortfolioOverview() {
           <>
             <div className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">Общая стоимость</p>
-              <p className="mt-2 text-2xl font-semibold">${data?.total_value.toLocaleString()}</p>
+              <p className="mt-2 text-2xl font-semibold">
+                ${data?.total_value?.toLocaleString() ?? '0'}
+              </p>
             </div>
             <div className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">Изменение за день</p>
               <p className="mt-2 text-2xl font-semibold">
-                {data?.day_change_percent >= 0 ? '+' : ''}
-                {data?.day_change_percent.toFixed(2)}%
+                {data?.day_change_percent !== undefined && data.day_change_percent >= 0 ? '+' : ''}
+                {data?.day_change_percent?.toFixed(2) ?? '0.00'}%
               </p>
             </div>
             <div className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">Позиции</p>
-              <p className="mt-2 text-2xl font-semibold">{data?.positions}</p>
+              <p className="mt-2 text-2xl font-semibold">
+                {data?.positions ?? 0}
+              </p>
             </div>
             <div className="rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground">Процент побед</p>
-              <p className="mt-2 text-2xl font-semibold">{data?.win_rate.toFixed(0)}%</p>
+              <p className="mt-2 text-2xl font-semibold">
+                {data?.win_rate?.toFixed(0) ?? '0'}%
+              </p>
             </div>
           </>
         )}

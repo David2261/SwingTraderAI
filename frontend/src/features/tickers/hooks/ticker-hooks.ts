@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/shared/api/api-client'
 import { queryKeys } from '@/shared/api/query-keys'
-import type { Candle, Signal, Ticker, TickerDetail, TopMover } from '@/shared/api/api-client-types'
+import { keepPreviousData } from '@tanstack/react-query'
+import type { Signal, TopMover } from '@/shared/api/api-client-types'
 
 export function useTickerSearch(query: string) {
   return useQuery({
@@ -10,7 +11,7 @@ export function useTickerSearch(query: string) {
     enabled: query.length > 0,
     staleTime: 2 * 60 * 1000,
     retry: 2,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -31,7 +32,7 @@ export function useTickerCandles(symbol: string, timeframe: string) {
     staleTime: 2 * 60 * 1000,
     refetchInterval: 10000,
     enabled: Boolean(symbol),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -46,7 +47,7 @@ export function useTopMovers() {
 
 export function useTickerSignals(symbol: string) {
   return useQuery<Signal[]>({
-    queryKey: queryKeys.tickers.detail(symbol).concat('signals') as const,
+    queryKey: [...queryKeys.tickers.detail(symbol), 'signals'],
     queryFn: () => apiClient.tickers.getSignals(symbol),
     staleTime: 2 * 60 * 1000,
     enabled: Boolean(symbol),
@@ -59,7 +60,14 @@ export function usePrefetchTicker(symbol: string, timeframe: string) {
   return () => {
     if (!symbol) return
 
-    queryClient.prefetchQuery(queryKeys.tickers.detail(symbol), () => apiClient.tickers.getById(symbol))
-    queryClient.prefetchQuery(queryKeys.tickers.candles(symbol, timeframe), () => apiClient.tickers.getCandles(symbol, timeframe))
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.tickers.detail(symbol),
+      queryFn: () => apiClient.tickers.getById(symbol)
+    })
+
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.tickers.candles(symbol, timeframe),
+      queryFn: () => apiClient.tickers.getCandles(symbol, timeframe)
+    })
   }
 }

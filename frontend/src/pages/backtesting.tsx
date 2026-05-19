@@ -1,4 +1,3 @@
-import { Activity, BarChart3, Clock3 } from 'lucide-react'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionCard } from '@/shared/ui/section-card'
 
