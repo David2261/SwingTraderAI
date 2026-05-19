@@ -1,120 +1,252 @@
-import { ArrowUpRight, BarChart3, ChartPie, ShieldCheck } from 'lucide-react'
-import { PageHeader } from '@/shared/ui/page-header'
-import { SectionCard } from '@/shared/ui/section-card'
-import { StatCard } from '@/shared/ui/stat-card'
+import { ArrowUpRight, ArrowDownRight, TrendingUp, ShieldCheck } from 'lucide-react'
+
+import {
+  GlassCard,
+  SectionHeader,
+  LivePulseIndicator,
+} from '@/shared/ui'
+
 import { usePortfolioPositions, usePortfolioSummary } from '@/features/portfolio/hooks/portfolio-hooks'
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number): string {
   return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
 }
 
 export function PortfolioPage() {
   const summaryQuery = usePortfolioSummary()
   const positionsQuery = usePortfolioPositions()
+
   const summary = summaryQuery.data
   const positions = positionsQuery.data ?? []
 
+  // Sorted copies for best/worst performers
+  const sortedByPnL = [...positions].sort((a, b) => b.pnl_percent - a.pnl_percent)
+  const bestPosition = sortedByPnL[0]
+  const worstPosition = sortedByPnL[sortedByPnL.length - 1]
+
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Portfolio"
-        description="Monitor allocation, risk, and PnL across open positions."
-      />
-
-      <div className="grid gap-6 xl:grid-cols-3">
-        <StatCard
-          title="Total Equity"
-          value={summary ? formatCurrency(summary.total_value) : 'Loading'}
-          change={{ value: summary?.day_change_percent ?? 0, label: 'daily' }}
-          icon={<ChartPie className="h-4 w-4" />}
-          className="bg-slate-950/80"
-        />
-        <StatCard
-          title="Unrealized PnL"
-          value={summary ? formatCurrency(summary.total_pnl) : 'Loading'}
-          change={{ value: summary?.win_rate ?? 0, label: 'win rate' }}
-          icon={<ArrowUpRight className="h-4 w-4" />}
-          className="bg-slate-950/80"
-        />
-        <StatCard
-          title="Risk Exposure"
-          value={summary ? `${(summary.positions * 8).toFixed(0)}%` : 'Loading'}
-          icon={<ShieldCheck className="h-4 w-4" />}
-          className="bg-slate-950/80"
-        />
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
+        <p className="text-slate-400 mt-1">
+          Real-time positions, allocation, and risk analysis
+        </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
-        <SectionCard
-          title="Open Positions"
-          description="Current holdings with entry, current price, and PnL details."
-        >
-          <div className="space-y-4">
-            {positions.map((position) => {
-              const gain = position.pnl >= 0
-              return (
-                <div key={position.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 transition hover:-translate-y-0.5">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-slate-400">{position.ticker.symbol}</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{position.ticker.name}</p>
-                    </div>
-                    <div className="rounded-full bg-slate-900 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">
-                      {position.allocation_percent?.toFixed(0)}% allocation
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Entry</p>
-                      <p className="mt-2 text-white">${position.avg_price.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Current</p>
-                      <p className="mt-2 text-white">${position.current_price.toFixed(2)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">PnL</p>
-                      <p className={gain ? 'mt-2 text-emerald-300' : 'mt-2 text-rose-300'}>
-                        {gain ? '+' : ''}${position.pnl.toFixed(2)} ({gain ? '+' : ''}{position.pnl_percent.toFixed(2)}%)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+      {/* Summary Stats */}
+      <div className="grid gap-6 sm:grid-cols-3">
+        <GlassCard>
+          <div className="p-6">
+            <p className="text-sm text-slate-400">Total Equity</p>
+            <div className="mt-3 flex items-baseline justify-between">
+              <p className="text-3xl font-bold text-white">
+                {summary ? formatCurrency(summary.total_value) : '—'}
+              </p>
+              <p
+                className={`text-sm font-semibold flex items-center gap-1 ${
+                  (summary?.day_change_percent ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}
+              >
+                {(summary?.day_change_percent ?? 0) >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4" />
+                )}
+                {(summary?.day_change_percent ?? 0) >= 0 ? '+' : ''}
+                {summary?.day_change_percent ?? 0}%
+              </p>
+            </div>
           </div>
-        </SectionCard>
+        </GlassCard>
 
-        <SectionCard
-          title="Portfolio Allocation"
-          description="High-level exposure by strategy and sector."
-        >
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              {positions.map((position) => (
-                <div key={position.id} className="mb-3 last:mb-0">
-                  <div className="flex items-center justify-between text-sm text-slate-200">
-                    <span>{position.ticker.symbol}</span>
-                    <span>{position.allocation_percent?.toFixed(0)}%</span>
-                  </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-400" style={{ width: `${position.allocation_percent ?? 0}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Best position</p>
-              <p className="mt-2 text-lg font-semibold text-white">{positions[0]?.ticker.symbol ?? '—'} / {positions[0]?.ticker.name ?? '—'}</p>
-              <p className="mt-1 text-sm text-slate-500">{positions[0] ? `${positions[0].pnl_percent.toFixed(2)}%` : '—'}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">AI Risk Summary</p>
-              <p className="mt-2 text-white">Core exposure remains balanced. Monitor overleveraged names and volatility around premium levels.</p>
+        <GlassCard>
+          <div className="p-6">
+            <p className="text-sm text-slate-400">Unrealized P&L</p>
+            <div className="mt-3 flex items-baseline justify-between">
+              <p className="text-3xl font-bold text-emerald-400">
+                {summary ? formatCurrency(summary.total_pnl) : '—'}
+              </p>
+              <p className="text-sm font-semibold text-emerald-300">
+                {summary?.win_rate ?? 0}% win rate
+              </p>
             </div>
           </div>
-        </SectionCard>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="p-6">
+            <p className="text-sm text-slate-400">Open Positions</p>
+            <div className="mt-3 flex items-baseline justify-between">
+              <p className="text-3xl font-bold text-white">{positions.length}</p>
+              <p className="text-sm font-semibold text-slate-400">Avg ~32% each</p>
+            </div>
+          </div>
+        </GlassCard>
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
+        {/* Open Positions */}
+        <GlassCard>
+          <div className="p-6">
+            <SectionHeader
+              title="Open Positions"
+              description={`${positions.length} active holdings`}
+              action={<TrendingUp className="h-4 w-4 text-slate-400" />}
+            />
+
+            <div className="mt-6 space-y-4">
+              {positions.length === 0 ? (
+                <p className="text-slate-400 py-8 text-center">No open positions yet</p>
+              ) : (
+                positions.map((position) => {
+                  const isGain = position.pnl >= 0
+
+                  return (
+                    <div
+                      key={position.id}
+                      className="rounded-2xl bg-slate-900/50 border border-slate-800 p-5 hover:border-slate-700 transition"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-bold text-lg">{position.ticker.symbol}</h4>
+                          <LivePulseIndicator active={isGain} size="sm" />
+                        </div>
+
+                        <span
+                          className={`text-xs font-medium px-3 py-1 rounded-full ${
+                            isGain
+                              ? 'bg-emerald-900/60 text-emerald-300'
+                              : 'bg-rose-900/60 text-rose-300'
+                          }`}
+                        >
+                          {position.allocation_percent}%
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-slate-500 mt-1">{position.ticker.name}</p>
+
+                      <div className="grid grid-cols-3 gap-4 mt-5 text-sm">
+                        <div>
+                          <p className="text-slate-500 text-xs">Quantity</p>
+                          <p className="font-semibold mt-1">
+                            {position.quantity.toFixed(position.quantity < 1 ? 4 : 2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500 text-xs">Avg Entry</p>
+                          <p className="font-semibold mt-1">
+                            ${position.avg_price.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500 text-xs">Current</p>
+                          <p className="font-semibold mt-1">
+                            ${position.current_price.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-slate-800 flex justify-between">
+                        <div>
+                          <p className="text-xs text-slate-500">P&L</p>
+                          <p className={`font-bold text-base ${isGain ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {isGain ? '+' : ''}{formatCurrency(position.pnl)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500">Return</p>
+                          <p className={`font-bold text-base ${isGain ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {isGain ? '+' : ''}{position.pnl_percent.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Allocation */}
+          <GlassCard>
+            <div className="p-6">
+              <SectionHeader title="Allocation" description="By position weight" />
+              <div className="mt-6 space-y-5">
+                {positions.map((position) => (
+                  <div key={position.id}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="font-medium">{position.ticker.symbol}</span>
+                      <span className="text-slate-400">{position.allocation_percent}%</span>
+                    </div>
+                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
+                        style={{ width: `${position.allocation_percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* Performance */}
+          <GlassCard>
+            <div className="p-6">
+              <SectionHeader title="Performance" description="Top & bottom performers" />
+              <div className="mt-6 space-y-4">
+                {bestPosition && (
+                  <div className="rounded-2xl bg-emerald-950/50 border border-emerald-900/50 p-4">
+                    <p className="text-xs text-emerald-400">Best Performer</p>
+                    <p className="text-lg font-semibold mt-1">{bestPosition.ticker.symbol}</p>
+                    <p className="text-emerald-400">+{bestPosition.pnl_percent.toFixed(2)}%</p>
+                  </div>
+                )}
+
+                {worstPosition && (
+                  <div className="rounded-2xl bg-rose-950/50 border border-rose-900/50 p-4">
+                    <p className="text-xs text-rose-400">Worst Performer</p>
+                    <p className="text-lg font-semibold mt-1">{worstPosition.ticker.symbol}</p>
+                    <p className="text-rose-400">{worstPosition.pnl_percent.toFixed(2)}%</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+
+      {/* Risk Analysis */}
+      <GlassCard>
+        <div className="p-6">
+          <SectionHeader
+            title="Risk Analysis"
+            description="Portfolio exposure and concentration"
+            action={<ShieldCheck className="h-4 w-4 text-slate-400" />}
+          />
+
+          <div className="grid gap-6 sm:grid-cols-3 mt-8">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-orange-400">
+                {Math.max(...positions.map((p) => p.allocation_percent), 0)}%
+              </p>
+              <p className="text-sm text-slate-400 mt-2">Largest Position</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-blue-400">{positions.length}</p>
+              <p className="text-sm text-slate-400 mt-2">Diversified Assets</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl font-bold text-emerald-400">{summary?.win_rate ?? 0}%</p>
+              <p className="text-sm text-slate-400 mt-2">Win Rate</p>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
     </div>
   )
 }

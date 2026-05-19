@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Search, TrendingUp, TrendingDown } from 'lucide-react'
-import { PageHeader } from '@/shared/ui/page-header'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Search, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { SignalBadge } from '@/shared/ui/signal-badge'
+import { GlassCard, SectionHeader, LivePulseIndicator } from '@/shared/ui'
+
 import { useWatchlist } from '@/features/watchlist/hooks/watchlist-hooks'
 
 const assetTypes = ['All', 'Crypto', 'Stocks', 'Russian'] as const
@@ -12,46 +13,87 @@ const assetTypes = ['All', 'Crypto', 'Stocks', 'Russian'] as const
 export function WatchlistPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<(typeof assetTypes)[number]>('All')
+  const [sortBy, setSortBy] = useState<'signal' | 'change' | 'name'>('signal')
+
   const watchlistQuery = useWatchlist()
   const items = watchlistQuery.data ?? []
 
+  const getSignal = (symbol: string): 'BUY' | 'SELL' | 'NEUTRAL' => {
+    if (symbol === 'TSLA') return 'SELL'
+    if (symbol === 'AAPL') return 'BUY'
+    return 'NEUTRAL'
+  }
+
   const filtered = useMemo(() => {
-    return items
-      .filter((item) => item.ticker.symbol.toLowerCase().includes(search.toLowerCase()) || item.ticker.name.toLowerCase().includes(search.toLowerCase()))
-      .filter((item) => {
-        if (filter === 'All') return true
+    let result = [...items].filter((item) => {
+      const searchTerm = search.toLowerCase()
+      return (
+        item.ticker.symbol.toLowerCase().includes(searchTerm) ||
+        item.ticker.name.toLowerCase().includes(searchTerm)
+      )
+    })
+
+    // Asset type filter
+    if (filter !== 'All') {
+      result = result.filter((item) => {
         if (filter === 'Crypto') return ['BTC', 'ETH'].includes(item.ticker.symbol)
         if (filter === 'Stocks') return ['AAPL', 'TSLA'].includes(item.ticker.symbol)
-        return ['SBER', 'GAZP', 'IMOEX'].includes(item.ticker.symbol)
+        if (filter === 'Russian') return ['SBER', 'GAZP', 'IMOEX'].includes(item.ticker.symbol)
+        return true
       })
-  }, [filter, items, search])
+    }
+
+    // Sorting
+    if (sortBy === 'change') {
+      result.sort((a, b) => b.ticker.change_percent - a.ticker.change_percent)
+    } else if (sortBy === 'name') {
+      result.sort((a, b) => a.ticker.symbol.localeCompare(b.ticker.symbol))
+    } else if (sortBy === 'signal') {
+      const signalOrder = { BUY: 3, NEUTRAL: 2, SELL: 1 }
+      result.sort((a, b) => {
+        const signalA = getSignal(a.ticker.symbol)
+        const signalB = getSignal(b.ticker.symbol)
+        return (signalOrder[signalB] || 0) - (signalOrder[signalA] || 0)
+      })
+    }
+
+    return result
+  }, [items, search, filter, sortBy])
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Watchlist"
-        description="Track live signals, price direction, and AI notes for your top assets."
-      />
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Watchlist</h1>
+        <p className="text-slate-400 mt-1">
+          Track live signals and AI insights on your assets
+        </p>
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="flex flex-col gap-4 rounded-3xl border border-slate-800/80 bg-slate-950/70 p-5 shadow-lg shadow-slate-950/20">
+      {/* Controls */}
+      <GlassCard>
+        <div className="p-6 space-y-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3">
+            {/* Search */}
+            <div className="flex-1 flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
               <Search className="h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search your watchlist"
+                placeholder="Search symbols or names..."
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="border-0 bg-transparent px-0 text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
+                onChange={(e) => setSearch(e.target.value)}
+                className="border-0 bg-transparent p-0 text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
               />
             </div>
+
+            {/* Filters */}
             <div className="flex flex-wrap gap-2">
               {assetTypes.map((type) => (
                 <Button
                   key={type}
-                  variant={filter === type ? 'secondary' : 'ghost'}
+                  variant={filter === type ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setFilter(type)}
+                  className="rounded-2xl"
                 >
                   {type}
                 </Button>
@@ -59,82 +101,155 @@ export function WatchlistPage() {
             </div>
           </div>
 
-          <Table className="min-w-full border-separate border-spacing-y-3">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticker</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Signal</TableHead>
-                <TableHead>Target / Stop</TableHead>
-                <TableHead>AI Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((item) => (
-                <TableRow key={item.id} className="group transition hover:-translate-y-0.5 hover:bg-slate-900/70">
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold text-white">{item.ticker.symbol}</span>
-                      <span className="text-xs text-slate-500">{item.ticker.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-white">${item.ticker.price.toFixed(2)}</div>
-                    <div className={`text-xs ${item.ticker.change_percent >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                      {item.ticker.change_percent >= 0 ? '+' : ''}{item.ticker.change_percent.toFixed(2)}%
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <SignalBadge signal={item.ticker.symbol === 'TSLA' ? 'SELL' : item.ticker.symbol === 'AAPL' ? 'BUY' : 'NEUTRAL'} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-slate-200">{item.ticker.symbol === 'BTC' ? '70k / 64k' : item.ticker.symbol === 'ETH' ? '4.4k / 3.8k' : '—'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="max-w-xs text-sm text-slate-400">{item.ticker.symbol === 'AAPL' ? 'Healthy momentum but watch overhead resistance.' : 'Strong support near moving average.'}</p>
-                  </TableCell>
-                </TableRow>
+          {/* Sort */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400 whitespace-nowrap">Sort by:</span>
+            <div className="flex gap-2">
+              {[
+                { key: 'signal', label: 'Signal Strength' },
+                { key: 'change', label: 'Price Change' },
+                { key: 'name', label: 'Name' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setSortBy(key as typeof sortBy)}
+                  className={`text-xs px-4 py-1.5 rounded-full transition ${
+                    sortBy === key
+                      ? 'bg-blue-900/70 text-blue-300'
+                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          </div>
         </div>
+      </GlassCard>
 
-        <div className="space-y-4 rounded-3xl border border-slate-800/80 bg-slate-950/70 p-5 shadow-lg shadow-slate-950/20">
-          <div className="rounded-3xl border border-slate-800/90 bg-slate-900/80 p-5">
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Signal summary</p>
-            <div className="mt-4 grid gap-4">
-              <div className="flex items-center justify-between rounded-2xl border border-slate-800/90 bg-slate-950 p-4">
-                <div>
-                  <p className="text-sm text-slate-400">Top mover</p>
-                  <p className="mt-1 font-semibold text-white">BTC momentum heat</p>
-                </div>
-                <TrendingUp className="h-5 w-5 text-emerald-300" />
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-slate-800/90 bg-slate-950 p-4">
-                <div>
-                  <p className="text-sm text-slate-400">Signal intensity</p>
-                  <p className="mt-1 font-semibold text-white">High</p>
-                </div>
-                <TrendingDown className="h-5 w-5 text-rose-300" />
-              </div>
+      {/* Watchlist Items */}
+      <div className="space-y-4">
+        {filtered.length === 0 ? (
+          <GlassCard>
+            <div className="p-16 text-center">
+              <p className="text-slate-400">No assets found matching your criteria.</p>
             </div>
-          </div>
-          <div className="rounded-3xl border border-slate-800/90 bg-slate-900/80 p-5">
-            <p className="text-sm text-slate-400">Recent activity</p>
-            <div className="mt-4 space-y-3">
-              {filtered.slice(0, 3).map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-800/90 bg-slate-950 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-slate-200">{item.ticker.symbol}</span>
-                    <SignalBadge signal={item.ticker.symbol === 'TSLA' ? 'SELL' : 'BUY'} />
+          </GlassCard>
+        ) : (
+          filtered.map((item) => {
+            const signal = getSignal(item.ticker.symbol)
+            const isPositive = item.ticker.change_percent >= 0
+
+            return (
+              <GlassCard key={item.id} className="hover:border-slate-600 transition-all">
+                <div className="p-5 sm:p-6">
+                  <div className="grid gap-5 sm:grid-cols-[1fr_auto_auto_auto] items-center">
+                    {/* Ticker Info */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-xl font-bold">{item.ticker.symbol}</h3>
+                          <LivePulseIndicator active={isPositive} size="sm" />
+                        </div>
+                        <p className="text-sm text-slate-500 mt-0.5">{item.ticker.name}</p>
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <div className="sm:text-right">
+                      <p className="text-2xl font-semibold text-white">
+                        ${item.ticker.price.toFixed(2)}
+                      </p>
+                      <p
+                        className={`text-sm font-medium flex items-center gap-1 sm:justify-end ${
+                          isPositive ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                        {isPositive ? '+' : ''}
+                        {item.ticker.change_percent.toFixed(2)}%
+                      </p>
+                    </div>
+
+                    {/* Signal */}
+                    <div className="sm:text-right">
+                      <SignalBadge signal={signal} />
+                      <p className="text-xs text-slate-500 mt-2">
+                        {signal === 'BUY' && '85% confidence'}
+                        {signal === 'SELL' && '79% confidence'}
+                        {signal === 'NEUTRAL' && '64% confidence'}
+                      </p>
+                    </div>
+
+                    {/* Action */}
+                    <div>
+                      <Button className="rounded-2xl px-5">View Setup</Button>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-slate-400">Estimated AI bias for the next 12h.</p>
+
+                  {/* AI Insight + Mini Trend */}
+                  <div className="mt-6 pt-5 border-t border-slate-800 grid gap-6 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-slate-400 mb-2">24h Trend</p>
+                      <div className="flex h-8 gap-0.5 items-end">
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-t ${isPositive ? 'bg-emerald-500/70' : 'bg-rose-500/70'}`}
+                            style={{ height: `${30 + Math.random() * 70}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400 mb-2">AI Insight</p>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        {item.ticker.symbol === 'AAPL'
+                          ? 'Healthy momentum recovering from support. Watch for breakout above resistance.'
+                          : item.ticker.symbol === 'TSLA'
+                          ? 'Momentum fading near overhead supply. Risk/reward turning unfavorable.'
+                          : item.ticker.symbol === 'BTC'
+                          ? 'Strong continuation bias but take profits near round levels.'
+                          : 'Monitor for follow-through volume on breakout attempts.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </GlassCard>
+            )
+          })
+        )}
+      </div>
+
+      {/* Stats */}
+      <GlassCard>
+        <div className="p-6">
+          <SectionHeader title="Watchlist Stats" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-6">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-white">{filtered.length}</p>
+              <p className="text-xs text-slate-500 mt-1">Assets Tracked</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-emerald-400">
+                {filtered.filter((i) => i.ticker.change_percent > 0).length}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Gaining</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-rose-400">
+                {filtered.filter((i) => i.ticker.change_percent < 0).length}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Losing</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-blue-400">3</p>
+              <p className="text-xs text-slate-500 mt-1">Strong Signals</p>
             </div>
           </div>
         </div>
-      </div>
+      </GlassCard>
     </div>
   )
 }

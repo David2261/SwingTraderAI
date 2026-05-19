@@ -1,226 +1,276 @@
-import { TrendingUp, Bolt, Clock3, Sparkles } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
-import { PageHeader } from '@/shared/ui/page-header'
-import { SectionCard } from '@/shared/ui/section-card'
-import { AIInsightCard } from '@/shared/ui/ai-insight-card'
-import { SignalBadge } from '@/shared/ui/signal-badge'
-import { MarketHeatBadge } from '@/shared/ui/market-heat-badge'
-import { StatCard } from '@/shared/ui/stat-card'
-import { useDashboardAlerts, useDashboardExplainability, useDashboardHeatmap, useDashboardOverview, useDashboardSignals, useDashboardActions } from '@/features/dashboard/hooks/dashboard-hooks'
-
-function formatCurrency(value: number) {
-  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-}
+import { Sparkles, TrendingUp, AlertTriangle, Zap } from 'lucide-react'
+import {
+  GlassCard,
+  SectionHeader,
+  MetricRow,
+  LivePulseIndicator,
+  MarketStatusBadge,
+  SignalBadge,
+} from '@/shared/ui'
+import { mockPortfolioSummary, mockSignalsFeed, mockAiMarketBriefing, mockExplainability, mockAlerts, mockPredictions } from '@/shared/mock/mock-data'
 
 export function DashboardPage() {
-  const overviewQuery = useDashboardOverview()
-  const signalQuery = useDashboardSignals()
-  const heatmapQuery = useDashboardHeatmap()
-  const explainQuery = useDashboardExplainability()
-  const alertsQuery = useDashboardAlerts()
-  const actionsQuery = useDashboardActions()
-
-  const overview = overviewQuery.data
-  const signals = signalQuery.data ?? []
-  const heatmap = heatmapQuery.data ?? []
-  const explainability = explainQuery.data ?? []
-  const alerts = alertsQuery.data ?? []
-  const actions = actionsQuery.data ?? []
-
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="AI Market Command Center"
-        description="A premium terminal for real-time signals, portfolio insight, and AI-driven trade coaching."
-      />
+    <div className="space-y-6">
+      {/* AI Market Briefing - Hero Section */}
+      <div className="rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900/80 to-slate-950/90 p-6 backdrop-blur-sm shadow-[0_0_40px_rgba(59,130,246,0.1)]">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-400" />
+              AI Market Briefing
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">Real-time market regime analysis</p>
+          </div>
+          <MarketStatusBadge status="bullish" />
+        </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.75fr_1fr]">
-        <div className="space-y-6">
-          <AIInsightCard
-            title="AI Market Briefing"
-            description="The system is tracking regime shifts across global crypto and equities."
-            strength="High Conviction"
-            score={overview?.confidence ?? 0}
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4">
-                <p className="text-sm text-slate-400">Regime</p>
-                <p className="mt-2 text-2xl text-white">{overview?.regime ?? 'Loading'}</p>
-              </div>
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-950/70 p-4">
-                <p className="text-sm text-slate-400">Volatility</p>
-                <p className="mt-2 text-2xl text-white">{overview?.volatility ?? 'Loading'}</p>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {(overview?.opportunities ?? []).map((item) => (
-                <div key={item.symbol} className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-slate-400">{item.symbol}</p>
-                      <p className="mt-1 text-base font-semibold text-white">{item.reason}</p>
-                    </div>
-                    <div className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-200">Score {item.score}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </AIInsightCard>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <StatCard
-              title="Total Equity"
-              value={overview ? formatCurrency(overview.summary.total_value) : '—'}
-              change={{ value: overview?.summary.day_change_percent ?? 0, label: 'daily' }}
-              icon={<TrendingUp className="h-4 w-4" />}
-              className="bg-slate-950/80"
-            />
-            <StatCard
-              title="Daily PnL"
-              value={overview ? formatCurrency(overview.summary.total_pnl) : '—'}
-              change={{ value: overview?.summary.day_change_percent ?? 0, label: 'today' }}
-              icon={<Bolt className="h-4 w-4" />}
-              className="bg-slate-950/80"
-            />
-            <StatCard
-              title="Open Positions"
-              value={overview?.summary.positions ?? '—'}
-              change={{ value: overview?.summary.win_rate ?? 0, label: 'win rate' }}
-              icon={<Clock3 className="h-4 w-4" />}
-              className="bg-slate-950/80"
-            />
-            <StatCard
-              title="Win Rate"
-              value={overview ? `${overview.summary.win_rate}%` : '—'}
-              change={{ value: 2.6, label: 'weekly' }}
-              icon={<Sparkles className="h-4 w-4" />}
-              className="bg-slate-950/80"
-            />
+        <div className="grid gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white mb-2">{mockAiMarketBriefing.narrative}</p>
           </div>
 
-          <SectionCard
-            title="Watchlist Signals Feed"
-            description="Stay ahead with live AI signals on your most important tickers."
-          >
-            <div className="space-y-4">
-              {signals.map((signal) => (
-                <div
-                  key={signal.id}
-                  className="group rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 transition hover:-translate-y-0.5 hover:border-slate-600"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-slate-400">{signal.ticker}</p>
-                      <p className="text-lg font-semibold text-white">{signal.signal}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs uppercase text-slate-400">Confidence</span>
-                      <div className="rounded-full bg-slate-800/90 px-3 py-1 text-sm font-semibold text-emerald-300">
-                        {(signal.confidence * 100).toFixed(0)}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {signal.indicators.map((indicator) => (
-                      <span key={indicator} className="rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-300">
-                        {indicator}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-sm text-slate-400">{signal.time}</p>
-                </div>
-              ))}
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl bg-slate-800/50 p-3">
+              <p className="text-xs text-slate-400">Regime</p>
+              <p className="text-sm font-semibold text-emerald-400 mt-1">{mockAiMarketBriefing.regime}</p>
             </div>
-          </SectionCard>
+            <div className="rounded-2xl bg-slate-800/50 p-3">
+              <p className="text-xs text-slate-400">Volatility</p>
+              <p className="text-sm font-semibold text-orange-400 mt-1">{mockAiMarketBriefing.volatility}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-800/50 p-3">
+              <p className="text-xs text-slate-400">AI Confidence</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="h-2 w-12 rounded-full bg-slate-700">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400"
+                    style={{ width: `${mockAiMarketBriefing.confidence * 100}%` }}
+                  />
+                </div>
+                <span className="text-sm font-semibold text-blue-400">{Math.round(mockAiMarketBriefing.confidence * 100)}%</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-800/50 p-3">
+              <p className="text-xs text-slate-400">Sentiment</p>
+              <p className="text-sm font-semibold text-emerald-400 mt-1">{mockAiMarketBriefing.sentiment}</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-3">
+            <p className="text-xs text-slate-400 mb-2">Strongest Setups</p>
+            <ul className="space-y-1">
+              {mockAiMarketBriefing.strongest_setups.map((setup, i) => (
+                <li key={i} className="text-sm text-slate-300 flex items-center gap-2">
+                  <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                  {setup}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <SectionCard
-            title="Market Heatmap"
-            description="Quick sentiment snapshot for key instruments."
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              {heatmap.map((item) => (
-                <div key={item.symbol} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-slate-400">{item.symbol}</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{item.name}</p>
-                    </div>
-                    <MarketHeatBadge status={item.status as any} active={item.active} />
-                  </div>
-                  <p className="mt-4 text-xl font-semibold text-white">
-                    {item.change > 0 ? '+' : ''}{item.change.toFixed(2)}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="AI Explainability"
-            description="Why the system flagged these signals."
-          >
-            <div className="space-y-4">
-              {explainability.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-                  <p className="font-semibold text-white">{item.title}</p>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-400">
-                    {item.reasons.map((reason) => (
-                      <li key={reason} className="flex items-start gap-2">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-300" />
-                        <span>{reason}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Recent Alerts"
-            description="Watch for high-priority trade signals and AI warnings."
-          >
-            <div className="space-y-3">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-white">{alert.label}</p>
-                      <p className="text-sm text-slate-400">{alert.description}</p>
-                    </div>
-                    <span className="rounded-full bg-slate-900 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">
-                      {alert.severity}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">{alert.time}</p>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Quick Actions"
-            description="Execute core workflows from the terminal."
-            actions={
-              <div className="hidden items-center gap-2 sm:flex">
-                <TrendingUp className="h-4 w-4 text-white" />
-                <span className="text-sm text-slate-400">Instant command set</span>
-              </div>
-            }
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {actions.map((action) => (
-                <Button key={action.id} variant={action.variant as any} className="h-14 w-full justify-between px-5 text-sm font-semibold">
-                  <span>{action.label}</span>
-                  <Bolt className="h-4 w-4" />
-                </Button>
-              ))}
-            </div>
-          </SectionCard>
+        <div className="mt-4 flex items-center justify-between pt-4 border-t border-slate-800/50">
+          <div className="flex items-center gap-2">
+            <LivePulseIndicator active={true} size="sm" />
+            <span className="text-xs text-slate-500">Live updated {new Date().toLocaleTimeString()}</span>
+          </div>
         </div>
       </div>
+
+      {/* Portfolio & Signals - Upper Row */}
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        {/* Portfolio Summary */}
+        <GlassCard>
+          <div className="p-6 space-y-4">
+            <SectionHeader title="Portfolio" description="Real-time allocation snapshot" />
+
+            <MetricRow label="Total Value" value={`$${mockPortfolioSummary.total_value.toLocaleString()}`} trend="up" />
+            <MetricRow label="Day P&L" value={`${mockPortfolioSummary.day_change_percent > 0 ? '+' : ''}${mockPortfolioSummary.day_change_percent}%`} trend={mockPortfolioSummary.day_change_percent > 0 ? 'up' : 'down'} />
+            <MetricRow label="Total P&L" value={`$${mockPortfolioSummary.total_pnl.toLocaleString()}`} trend="up" secondary={`Win rate: ${mockPortfolioSummary.win_rate}%`} />
+
+            <div className="pt-3 border-t border-slate-800/50">
+              <div className="h-6 rounded-full bg-slate-800/50 overflow-hidden">
+                <div className="flex h-full">
+                  {[
+                    { pct: 42, color: 'bg-blue-500' },
+                    { pct: 18, color: 'bg-emerald-500' },
+                    { pct: 12, color: 'bg-orange-500' },
+                    { pct: 9, color: 'bg-rose-500' },
+                    { pct: 8, color: 'bg-purple-500' },
+                  ].map((segment, i) => (
+                    <div key={i} className={segment.color} style={{ width: `${segment.pct}%` }} />
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">{mockPortfolioSummary.positions} positions</p>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* AI Signals Feed */}
+        <GlassCard>
+          <div className="p-6 space-y-3">
+            <SectionHeader title="Latest Signals" description="AI-generated trading ideas" action={<TrendingUp className="h-4 w-4 text-slate-400" />} />
+
+            {mockSignalsFeed.slice(0, 3).map((signal) => (
+              <div key={signal.id} className="rounded-2xl bg-slate-800/50 p-3 flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">{signal.ticker}</span>
+                    <SignalBadge signal={signal.signal} />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{signal.indicators[0]}</p>
+                </div>
+                <div className="text-right">
+                  <div className="h-5 w-12 rounded-full bg-slate-700/50 flex items-center justify-center">
+                    <div
+                      className="h-4 w-11 rounded-full bg-gradient-to-r from-blue-500 to-emerald-400"
+                      style={{ width: `${signal.confidence * 100 * 0.95}px` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{Math.round(signal.confidence * 100)}%</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Heatmap & Explainability */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+        {/* Market Heatmap */}
+        <GlassCard>
+          <div className="p-6 space-y-4">
+            <SectionHeader title="Market Heatmap" description="Real-time performance grid" />
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { symbol: 'BTC', change: 1.84, regime: 'Bullish', active: true },
+                { symbol: 'ETH', change: -0.44, regime: 'Neutral', active: false },
+                { symbol: 'SBER', change: 2.27, regime: 'Bullish', active: true },
+                { symbol: 'GAZP', change: -1.69, regime: 'Bearish', active: false },
+              ].map((item) => (
+                <div
+                  key={item.symbol}
+                  className="rounded-2xl bg-slate-800/50 p-3 relative overflow-hidden"
+                >
+                  {item.active && <div className="absolute inset-0 opacity-5 bg-gradient-to-br from-emerald-500 to-transparent" />}
+                  <div className="relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">{item.symbol}</span>
+                      {item.active && <LivePulseIndicator active size="sm" />}
+                    </div>
+                    <p className={`text-sm font-semibold mt-1 ${item.change > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {item.change > 0 ? '+' : ''}{item.change}%
+                    </p>
+                    <p className="text-xs text-slate-500">{item.regime}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* AI Explainability */}
+        <GlassCard>
+          <div className="p-6 space-y-3">
+            <SectionHeader title="AI Explainability" description="Why signals were generated" action={<Sparkles className="h-4 w-4 text-blue-400" />} />
+
+            {mockExplainability.map((exp) => (
+              <div key={exp.id} className="rounded-2xl bg-slate-800/50 p-3 space-y-2">
+                <p className="text-sm font-semibold text-slate-300">{exp.title}</p>
+                <ul className="space-y-1">
+                  {exp.reasons.slice(0, 2).map((reason, i) => (
+                    <li key={i} className="text-xs text-slate-500 flex items-start gap-2">
+                      <span className="text-blue-400 mt-0.5">→</span>
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Alerts & Predictions */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Active Alerts */}
+        <GlassCard>
+          <div className="p-6 space-y-3">
+            <SectionHeader title="Active Alerts" description="Real-time trading warnings" action={<AlertTriangle className="h-4 w-4 text-orange-400" />} />
+
+            {mockAlerts.slice(0, 2).map((alert) => (
+              <div key={alert.id} className={`rounded-2xl p-3 flex items-start gap-3 ${
+                alert.severity === 'high' ? 'bg-rose-950/50 border border-rose-900/30' :
+                alert.severity === 'medium' ? 'bg-orange-950/50 border border-orange-900/30' :
+                'bg-blue-950/50 border border-blue-900/30'
+              }`}>
+                <div className={`h-2 w-2 rounded-full mt-1 flex-shrink-0 ${
+                  alert.severity === 'high' ? 'bg-rose-500' :
+                  alert.severity === 'medium' ? 'bg-orange-500' :
+                  'bg-blue-500'
+                }`} />
+                <div>
+                  <p className="text-sm font-semibold text-white">{alert.label}</p>
+                  <p className="text-xs text-slate-400 mt-1">{alert.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        {/* Recent Predictions */}
+        <GlassCard>
+          <div className="p-6 space-y-3">
+            <SectionHeader title="Recent Predictions" description="AI model forecasts" action={<Zap className="h-4 w-4 text-yellow-400" />} />
+
+            {mockPredictions.slice(0, 2).map((pred) => (
+              <div key={pred.id} className="rounded-2xl bg-slate-800/50 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white">{pred.symbol}</span>
+                  <span className={`text-xs font-semibold uppercase tracking-wider ${pred.prediction === 'bullish' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {pred.prediction}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Probability</span>
+                  <span className="text-sm font-semibold text-blue-400">{Math.round(pred.probability * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Quick Actions */}
+      <GlassCard>
+        <div className="p-6 space-y-4">
+          <SectionHeader title="Quick Actions" description="One-click trading commands" />
+
+          <div className="grid gap-3 sm:grid-cols-4">
+            {[
+              { label: 'View Setup', color: 'blue' },
+              { label: 'Place Order', color: 'emerald' },
+              { label: 'Risk Check', color: 'orange' },
+              { label: 'Backtest', color: 'purple' },
+            ].map((action) => (
+              <button
+                key={action.label}
+                className={`rounded-2xl px-4 py-3 text-sm font-semibold transition-all transform hover:scale-105 hover:shadow-lg ${
+                  action.color === 'blue' ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/60' :
+                  action.color === 'emerald' ? 'bg-emerald-900/50 text-emerald-300 hover:bg-emerald-800/60' :
+                  action.color === 'orange' ? 'bg-orange-900/50 text-orange-300 hover:bg-orange-800/60' :
+                  'bg-purple-900/50 text-purple-300 hover:bg-purple-800/60'
+                }`}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </GlassCard>
     </div>
   )
 }

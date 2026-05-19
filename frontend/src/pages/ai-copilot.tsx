@@ -1,87 +1,157 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Send, Sparkles } from 'lucide-react'
-import { Button } from '@/shared/ui/button'
+
 import { Input } from '@/shared/ui/input'
-import { PageHeader } from '@/shared/ui/page-header'
-import { SectionCard } from '@/shared/ui/section-card'
-import { useAICopilotHistory, useAIPrompts } from '@/features/ai/hooks/ai-hooks'
+import { Button } from '@/shared/ui/button'
+import { GlassCard, SectionCard } from '@/shared/ui'
+
+import { mockAICopilotHistory, mockAIPrompts } from '@/shared/mock/mock-data'
 
 export function AICopilotPage() {
-  const [draft, setDraft] = useState('')
-  const [conversation, setConversation] = useState<Array<{ id: string; role: string; message: string }>>([])
-  const historyQuery = useAICopilotHistory()
-  const promptsQuery = useAIPrompts()
+  const [messages, setMessages] = useState(mockAICopilotHistory)
+  const [inputValue, setInputValue] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const history = historyQuery.data ?? []
-  const prompts = promptsQuery.data ?? []
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return
 
-  const mergedConversation = useMemo(() => [...history, ...conversation], [conversation, history])
+    const userMsg = {
+      id: `msg-${Date.now()}`,
+      role: 'user' as const,
+      message: inputValue,
+    }
 
-  const sendMessage = () => {
-    if (!draft.trim()) return
-    setConversation((previous) => [
-      ...previous,
-      { id: `out-${Date.now()}`, role: 'user', message: draft.trim() },
-      { id: `in-${Date.now()}`, role: 'assistant', message: 'Analyzing the request and preparing a model-backed insight...' },
-    ])
-    setDraft('')
+    setMessages((prev) => [...prev, userMsg])
+    setInputValue('')
+    setIsLoading(true)
+
+    // Simulate AI response
+    setTimeout(() => {
+      const responses = [
+        'BTC momentum is strong but approaching resistance. Consider scaling into positions instead of chasing prices.',
+        'The market is showing signs of consolidation. Watch for volume confirmation on any breakout attempts.',
+        'Portfolio risk ratio looks healthy. Current allocation provides good diversification without excess leverage.',
+        'SBER breakout pattern is classic continuation setup. Monitor the 305 support level for potential pull-back entry.',
+        'Overall market sentiment is cautiously bullish. Key levels to watch: 41200 for BTC and 305 for SBER.',
+      ]
+
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)]
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}`,
+          role: 'assistant' as const,
+          message: randomResponse,
+        },
+      ])
+      setIsLoading(false)
+    }, 1400)
+  }
+
+  const handleQuickPrompt = (prompt: string) => {
+    setInputValue(prompt)
   }
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="AI Copilot"
-        description="Interact with your trading terminal using natural prompts and get instant AI commentary."
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_0.5fr]">
-        <SectionCard
-          title="AI Terminal"
-          description="A chat-style workspace for trading intelligence and AI-driven recommendations."
-        >
-          <div className="space-y-4">
-            {mergedConversation.map((entry) => (
-              <div key={entry.id} className={`rounded-3xl border p-4 ${entry.role === 'assistant' ? 'border-slate-700 bg-slate-950/80' : 'border-slate-800 bg-slate-900/80'}`}>
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{entry.role}</p>
-                <p className="mt-2 text-sm text-slate-200">{entry.message}</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Suggested Prompts" description="Use these prompts to accelerate insights.">
-          <div className="space-y-3">
-            {prompts.map((prompt) => (
-              <Button key={prompt} variant="ghost" className="w-full justify-between px-4 py-3 text-left text-sm text-slate-200" onClick={() => setDraft(prompt)}>
-                <span>{prompt}</span>
-                <Sparkles className="h-4 w-4 text-amber-300" />
-              </Button>
-            ))}
-          </div>
-        </SectionCard>
+    <div className="space-y-6 h-[calc(100vh-200px)] flex flex-col">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Sparkles className="h-9 w-9 text-blue-400" />
+            AI Copilot Terminal
+          </h1>
+          <p className="text-slate-400 mt-1">
+            Bloomberg Terminal × ChatGPT для трейдинга
+          </p>
+        </div>
       </div>
 
-      <SectionCard title="Quick Actions" description="Execute AI workflows directly from the command line." actions={<Send className="h-4 w-4 text-white" />}>
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-            <p className="text-sm text-slate-400">Type a prompt to generate an AI trade commentary.</p>
-            <div className="mt-4 flex gap-3">
-              <Input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask AI about BTC, risk, or strategy" className="flex-1 border-slate-800 bg-slate-900 text-slate-100" />
-              <Button variant="secondary" size="lg" onClick={sendMessage}>
-                Send
-              </Button>
+      {/* Messages Area */}
+      <GlassCard className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <Sparkles className="h-16 w-16 text-slate-600 mb-6" />
+              <p className="text-slate-400 text-lg">Начните разговор с AI Copilot</p>
             </div>
+          ) : (
+            messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] md:max-w-[70%] px-5 py-3.5 rounded-3xl ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600/90 text-white'
+                      : 'bg-slate-800/80 text-slate-100 border border-slate-700/50'
+                  }`}
+                >
+                  <p className="text-[15px] leading-relaxed">{msg.message}</p>
+                </div>
+              </div>
+            ))
+          )}
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-slate-800/80 border border-slate-700/50 px-5 py-3.5 rounded-3xl">
+                <div className="flex gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-slate-400 animate-bounce" />
+                  <div className="h-2 w-2 rounded-full bg-slate-400 animate-bounce delay-150" />
+                  <div className="h-2 w-2 rounded-full bg-slate-400 animate-bounce delay-300" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="border-t border-slate-700/50 p-6">
+          <div className="flex gap-3">
+            <Input
+              placeholder="Спросите о рынке, сигналах или портфеле..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSendMessage()
+                }
+              }}
+              className="flex-1 bg-slate-900/70 border-slate-700 text-white placeholder:text-slate-500"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={isLoading || !inputValue.trim()}
+              size="icon"
+              className="h-11 w-11 rounded-2xl"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Ticker quick actions</p>
-              <p className="mt-2 text-white">Launch analysis on any symbol from the watchlist.</p>
-            </div>
-            <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Context cards</p>
-              <p className="mt-2 text-white">Attach positions, alerts, and strategy signals to your prompt.</p>
-            </div>
-          </div>
+        </div>
+      </GlassCard>
+
+      {/* Quick Prompts */}
+      <SectionCard
+        title="Быстрые промпты"
+        description="Нажмите, чтобы быстро задать вопрос"
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          {mockAIPrompts.slice(0, 6).map((prompt, i) => (
+            <Button
+              key={i}
+              variant="ghost"
+              className="h-auto justify-start px-5 py-3.5 text-left text-sm text-slate-200 hover:bg-slate-800/50 border border-slate-800 hover:border-slate-700"
+              onClick={() => handleQuickPrompt(prompt)}
+            >
+              {prompt}
+            </Button>
+          ))}
         </div>
       </SectionCard>
     </div>
