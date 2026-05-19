@@ -77,8 +77,8 @@ export function TickerChart({ candles, onSelectTimeframe, selectedTimeframe }: T
     <div className="space-y-4 rounded-3xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Candlestick chart</h2>
-          <p className="text-sm text-muted-foreground">Live instrument with time frame selector.</p>
+          <h2 className="text-lg font-semibold">Свечный график</h2>
+          <p className="text-sm text-muted-foreground">Live инструмент с селектором временных рамок.</p>
         </div>
         <div className="flex gap-2">
           {timeframeOptions.map((option) => (

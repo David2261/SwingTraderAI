@@ -18,7 +18,7 @@ export function Topbar() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search tickers..."
+            placeholder="Поисковые тикеры..."
             className="w-64 pl-10"
           />
         </div>
@@ -38,11 +38,11 @@ export function Topbar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem>Профиль</DropdownMenuItem>
+            <DropdownMenuItem>Настройки</DropdownMenuItem>
+            <DropdownMenuItem>Поддержка</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

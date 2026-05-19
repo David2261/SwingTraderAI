@@ -13,8 +13,8 @@ export function AdminSystemStatusPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Admin: System Status"
-        description="Operational health of feeds, APIs, and platform services."
+        title="Администратор: Состояние системы"
+        description="Проверка работоспособности каналов данных, API и сервисов платформы."
       />
 
       <SectionCard title="Platform status" description="Real-time service health summaries." actions={<ServerCog className="h-4 w-4 text-white" />}>
@@ -31,9 +31,9 @@ export function AdminSystemStatusPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Incident readiness" description="Preparedness for outages and recovery events." actions={<Activity className="h-4 w-4 text-white" />}>
+      <SectionCard title="Готовность к инцидентам" description="Подготовка к отключениям электроэнергии и восстановительным работам." actions={<Activity className="h-4 w-4 text-white" />}>
         <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5 text-slate-400">
-          <p className="text-sm">All core services are monitored. Automated alerts will notify the ops team if any pipeline falls below expected thresholds.</p>
+          <p className="text-sm">Все основные сервисы мониторятся. Автоматические оповещения будут уведомлять команду эксплуатации, если какой-либо pipeline упадет ниже ожидаемых порогов.</p>
         </div>
       </SectionCard>
     </div>

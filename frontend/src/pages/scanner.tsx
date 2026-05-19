@@ -23,11 +23,11 @@ export function ScannerPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Scanner"
-        description="Filter the market for high-conviction setups and AI-enabled signals."
+        title="Сканер"
+        description="Отфильтруйте рынок, чтобы найти высокоэффективные стратегии и сигналы, основанные на искусственном интеллекте."
       />
 
-      <SectionCard title="Scanner filters" description="Find setups by technical condition and signal strength.">
+      <SectionCard title="Фильтры сканера" description="Найдите сделки по техническому условию и силе сигнала.">
         <div className="flex flex-wrap gap-3">
           {filters.map((filterOption) => (
             <Button
@@ -49,7 +49,7 @@ export function ScannerPage() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search symbols or signals"
+              placeholder="Поиск символов или сигналов"
               className="border-0 bg-transparent px-0 text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
             />
           </div>
@@ -76,22 +76,22 @@ export function ScannerPage() {
           </div>
         </div>
 
-        <SectionCard title="Scanner summary" description="Active signal count and recent strength.">
+        <SectionCard title="Сводка сканера" description="Количество активных сигналов и их недавняя сила.">
           <div className="space-y-4">
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Active picks</p>
+              <p className="text-sm text-slate-400">Активные выборы</p>
               <p className="mt-2 text-3xl font-semibold text-white">{filtered.length}</p>
             </div>
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-              <p className="text-sm text-slate-400">Current filter</p>
+              <p className="text-sm text-slate-400">Текущий фильтр</p>
               <p className="mt-2 text-lg font-semibold text-white">{activeFilter}</p>
             </div>
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-400">Scanner speed</p>
+                <p className="text-sm text-slate-400">Скорость сканера</p>
                 <Activity className="h-5 w-5 text-cyan-300" />
               </div>
-              <p className="mt-2 text-white">Live feed refreshed every 12 seconds.</p>
+              <p className="mt-2 text-white">Прямая трансляция обновляется каждую секунду.</p>
             </div>
           </div>
         </SectionCard>

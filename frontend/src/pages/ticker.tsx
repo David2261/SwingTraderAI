@@ -8,10 +8,10 @@ export function TickerPage() {
     <div className="space-y-8">
       <PageHeader
         title={`Ticker: ${id?.toUpperCase()}`}
-        description="Detailed analysis and trading information"
+        description="Подробный анализ и торговая информация"
       />
       <div className="text-center text-muted-foreground">
-        Ticker details and charts coming soon...
+        Подробная информация о тикерах и графики появятся в ближайшее время....
       </div>
     </div>
   )

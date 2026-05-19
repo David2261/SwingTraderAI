@@ -16,31 +16,31 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Analytics"
-        description="A complete analytics workspace for signal distribution, volatility, and strategy performance."
+        title="Аналитика"
+        description="Полноценное аналитическое рабочее пространство для анализа распределения сигналов, волатильности и эффективности стратегий."
       />
 
       <div className="grid gap-6 xl:grid-cols-4">
         <StatCard
-          title="Win/Loss Ratio"
+          title="Соотношение побед и поражений"
           value={summary ? `${summary.winRate}%` : 'Loading'}
           icon={<TrendingUp className="h-4 w-4" />}
           className="bg-slate-950/80"
         />
         <StatCard
-          title="Model Confidence"
+          title="Уверенность модели"
           value={summary ? `${(summary.avgConfidence * 100).toFixed(0)}%` : 'Loading'}
           icon={<Zap className="h-4 w-4" />}
           className="bg-slate-950/80"
         />
         <StatCard
-          title="Volatility Index"
+          title="Индекс волатильности"
           value={summary ? summary.volatilityIndex : 'Loading'}
           icon={<CircleDot className="h-4 w-4" />}
           className="bg-slate-950/80"
         />
         <StatCard
-          title="Signal Coverage"
+          title="Зона покрытия сигнала"
           value={`${snapshot.length} assets`}
           icon={<BarChart3 className="h-4 w-4" />}
           className="bg-slate-950/80"
@@ -48,7 +48,7 @@ export function AnalyticsPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
-        <SectionCard title="Signal Distribution" description="Heatmap view of active signals across the platform.">
+        <SectionCard title="Распределение сигналов" description="Тепловая карта активных сигналов на всей платформе.">
           <div className="space-y-4">
             {summary?.signalDistribution.map((segment) => (
               <div key={segment.label} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -64,7 +64,7 @@ export function AnalyticsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Volatility Analysis" description="AI confidence and trending market pulse.">
+        <SectionCard title="Анализ волатильности" description="Уверенность модели и трендовый пульс рынка.">
           <div className="space-y-4">
             {pulse.map((item) => (
               <div key={item.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -78,7 +78,7 @@ export function AnalyticsPage() {
         </SectionCard>
       </div>
 
-      <SectionCard title="Strategy Performance" description="Preview the strongest and weakest recent signals.">
+      <SectionCard title="Эффективность стратегии" description="Предварительный просмотр самых сильных и слабых последних сигналов.">
         <div className="grid gap-4 sm:grid-cols-2">
           {snapshot.map((item) => (
             <div key={item.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -88,7 +88,7 @@ export function AnalyticsPage() {
                   {(item.change_percent >= 0 ? '+' : '') + item.change_percent.toFixed(2)}%
                 </span>
               </div>
-              <p className="mt-3 text-sm text-slate-400">Market snapshot indicates a strong short-term bias.</p>
+              <p className="mt-3 text-sm text-slate-400">Рыночный снимок указывает на сильную краткосрочную тенденцию.</p>
             </div>
           ))}
         </div>

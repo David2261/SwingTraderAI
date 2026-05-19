@@ -13,7 +13,7 @@ export function WatchlistWidget() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Watchlist preview</CardTitle>
+          <CardTitle>Предварительный просмотр списка отслеживаемых товаров</CardTitle>
           <Star className="h-5 w-5 text-primary" />
         </div>
       </CardHeader>
@@ -24,7 +24,7 @@ export function WatchlistWidget() {
             <Skeleton className="h-12" />
           </div>
         ) : topFive.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Your watchlist is empty. Add assets to start tracking performance.</p>
+          <p className="text-sm text-muted-foreground">Ваш список отслеживаемых товаров пуст. Добавьте активы, чтобы начать отслеживание производительности.</p>
         ) : (
           topFive.map((item) => (
             <div key={item.id} className="flex items-center justify-between rounded-2xl border border-border p-4">

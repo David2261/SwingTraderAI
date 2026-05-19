@@ -4,11 +4,11 @@ export function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Settings"
-        description="Manage your account and preferences"
+        title="Настройки"
+        description="Управляйте своей учетной записью и настройками."
       />
       <div className="text-center text-muted-foreground">
-        Settings panel coming soon...
+        Панель настроек появится в ближайшее время....
       </div>
     </div>
   )

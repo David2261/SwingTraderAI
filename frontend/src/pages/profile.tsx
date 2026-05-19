@@ -10,14 +10,14 @@ export function ProfilePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Profile"
-        description="View your account details and platform access level."
+        title="Профиль"
+        description="Просмотрите сведения о своей учетной записи и уровне доступа к платформе."
       />
 
-      <SectionCard title="User Profile" description="Personal and role information." actions={<UserCircle2 className="h-4 w-4 text-white" />}>
+      <SectionCard title="Профиль пользователя" description="Личная информация и уровень роли." actions={<UserCircle2 className="h-4 w-4 text-white" />}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-            <p className="text-sm text-slate-400">Username</p>
+            <p className="text-sm text-slate-400">Имя пользователя</p>
             <p className="mt-2 text-lg font-semibold text-white">{profile?.username ?? 'Loading'}</p>
           </div>
           <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -25,11 +25,11 @@ export function ProfilePage() {
             <p className="mt-2 text-lg font-semibold text-white">{profile?.email ?? 'Loading'}</p>
           </div>
           <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-            <p className="text-sm text-slate-400">Role</p>
+            <p className="text-sm text-slate-400">Роль</p>
             <p className="mt-2 text-lg font-semibold text-white">{profile?.role ?? 'Loading'}</p>
           </div>
           <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
-            <p className="text-sm text-slate-400">Joined</p>
+            <p className="text-sm text-slate-400">Присоединился</p>
             <p className="mt-2 text-lg font-semibold text-white">{profile?.joined_at ?? 'Loading'}</p>
           </div>
         </div>

@@ -12,7 +12,7 @@ export function NotFoundPage() {
             404
           </CardTitle>
           <CardDescription className="text-lg">
-            The page you're looking for doesn't exist.
+            Страница, которую вы ищете, не существует.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -20,12 +20,12 @@ export function NotFoundPage() {
             <Button asChild>
               <Link to="/dashboard">
                 <Home className="mr-2 h-4 w-4" />
-                Go to Dashboard
+                Перейти к приборной панели
               </Link>
             </Button>
             <Button variant="outline" onClick={() => window.history.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Go Back
+              Вернуться
             </Button>
           </div>
         </CardContent>

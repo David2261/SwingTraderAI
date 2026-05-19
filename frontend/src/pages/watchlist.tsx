@@ -64,9 +64,9 @@ export function WatchlistPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Watchlist</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Список наблюдения</h1>
         <p className="text-slate-400 mt-1">
-          Track live signals and AI insights on your assets
+          Отслеживайте живые сигналы и AI-анализ на ваших активах
         </p>
       </div>
 
@@ -78,7 +78,7 @@ export function WatchlistPage() {
             <div className="flex-1 flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
               <Search className="h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search symbols or names..."
+                placeholder="Поиск символов или названий..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border-0 bg-transparent p-0 text-slate-100 placeholder:text-slate-500 focus-visible:outline-none"
@@ -103,12 +103,12 @@ export function WatchlistPage() {
 
           {/* Sort */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 whitespace-nowrap">Sort by:</span>
+            <span className="text-xs text-slate-400 whitespace-nowrap">Сортировать по:</span>
             <div className="flex gap-2">
               {[
-                { key: 'signal', label: 'Signal Strength' },
-                { key: 'change', label: 'Price Change' },
-                { key: 'name', label: 'Name' },
+                { key: 'signal', label: 'Сила сигнала' },
+                { key: 'change', label: 'Изменение цены' },
+                { key: 'name', label: 'Название' },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -132,7 +132,7 @@ export function WatchlistPage() {
         {filtered.length === 0 ? (
           <GlassCard>
             <div className="p-16 text-center">
-              <p className="text-slate-400">No assets found matching your criteria.</p>
+              <p className="text-slate-400">Активы не найдены, соответствующие вашим критериям.</p>
             </div>
           </GlassCard>
         ) : (
@@ -203,15 +203,15 @@ export function WatchlistPage() {
                     </div>
 
                     <div>
-                      <p className="text-xs text-slate-400 mb-2">AI Insight</p>
+                      <p className="text-xs text-slate-400 mb-2">AI Анализ</p>
                       <p className="text-sm text-slate-300 leading-relaxed">
                         {item.ticker.symbol === 'AAPL'
-                          ? 'Healthy momentum recovering from support. Watch for breakout above resistance.'
+                          ? 'Наблюдается позитивный импульс, восстанавливающийся после уровня поддержки. Следите за прорывом выше уровня сопротивления.'
                           : item.ticker.symbol === 'TSLA'
-                          ? 'Momentum fading near overhead supply. Risk/reward turning unfavorable.'
+                          ? 'Импульс ослабевает вблизи верхнего предела предложения. Соотношение риска и доходности становится неблагоприятным.'
                           : item.ticker.symbol === 'BTC'
-                          ? 'Strong continuation bias but take profits near round levels.'
-                          : 'Monitor for follow-through volume on breakout attempts.'}
+                          ? 'Сильная тенденция к продолжению тренда, но фиксация прибыли вблизи круглых уровней.'
+                          : 'Отслеживайте объем последующих действий при попытках прорыва.'}
                       </p>
                     </div>
                   </div>
@@ -225,27 +225,27 @@ export function WatchlistPage() {
       {/* Stats */}
       <GlassCard>
         <div className="p-6">
-          <SectionHeader title="Watchlist Stats" />
+          <SectionHeader title="Статистика списка наблюдения" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-6">
             <div className="text-center">
               <p className="text-3xl font-bold text-white">{filtered.length}</p>
-              <p className="text-xs text-slate-500 mt-1">Assets Tracked</p>
+              <p className="text-xs text-slate-500 mt-1">Отслеживаемые активы</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-emerald-400">
                 {filtered.filter((i) => i.ticker.change_percent > 0).length}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Gaining</p>
+              <p className="text-xs text-slate-500 mt-1">Прирост</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-rose-400">
                 {filtered.filter((i) => i.ticker.change_percent < 0).length}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Losing</p>
+              <p className="text-xs text-slate-500 mt-1">Потери</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-blue-400">3</p>
-              <p className="text-xs text-slate-500 mt-1">Strong Signals</p>
+              <p className="text-xs text-slate-500 mt-1">Сильные сигналы</p>
             </div>
           </div>
         </div>

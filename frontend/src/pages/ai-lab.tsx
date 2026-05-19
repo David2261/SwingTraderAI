@@ -13,11 +13,11 @@ export function AILabPage() {
     <div className="space-y-8">
       <PageHeader
         title="AI Lab"
-        description="Monitor model registry, training jobs, and prediction confidence for the lab."
+        description="Мониторинг регистрации моделей, заданий на обучение и достоверности прогнозов для лаборатории."
       />
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <SectionCard title="Model Registry" description="Track production and experimental AI models.">
+        <SectionCard title="Registry моделей" description="Отслеживание производственных и экспериментальных AI моделей.">
           <div className="space-y-4">
             {models.map((model) => (
               <div key={model.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -35,7 +35,7 @@ export function AILabPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Training Jobs" description="Live state of model retraining and queued experiments.">
+        <SectionCard title="Задания на обучение" description="Живое состояние переобучения моделей и поставленных в очередь экспериментов.">
           <div className="space-y-4">
             {jobs.map((job) => (
               <div key={job.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -46,29 +46,29 @@ export function AILabPage() {
                 <div className="mt-3 h-2 rounded-full bg-slate-800">
                   <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" style={{ width: `${job.progress}%` }} />
                 </div>
-                <p className="mt-2 text-sm text-slate-400">Started {job.started_at}</p>
+                <p className="mt-2 text-sm text-slate-400">Началось {job.started_at}</p>
               </div>
             ))}
           </div>
         </SectionCard>
 
-        <SectionCard title="Model Metrics" description="Key indicators for AI performance.">
+        <SectionCard title="Метрики модели" description="Ключевые показатели эффективности AI.">
           <div className="space-y-4 rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5">
             <div className="flex items-center gap-3 text-white">
               <Cpu className="h-5 w-5 text-sky-300" />
-              <span className="font-semibold">Operational accuracy</span>
+              <span className="font-semibold">Операционная точность</span>
             </div>
-            <p className="mt-3 text-sm text-slate-400">Model predictions remain stable across short-term trade cycles.</p>
+            <p className="mt-3 text-sm text-slate-400">Прогнозы модели остаются стабильными в течение краткосрочных торговых циклов.</p>
             <div className="flex items-center gap-3 text-white">
               <Database className="h-5 w-5 text-emerald-300" />
-              <span className="font-semibold">Feature usage</span>
+              <span className="font-semibold">Использование признаков</span>
             </div>
-            <p className="mt-3 text-sm text-slate-400">Volume, RSI, and EMA crossovers are currently driving the highest signal relevance.</p>
+            <p className="mt-3 text-sm text-slate-400">Объем, RSI и пересечения EMA в настоящее время обеспечивают наибольшую актуальность сигнала.</p>
             <div className="flex items-center gap-3 text-white">
               <ShieldCheck className="h-5 w-5 text-violet-300" />
-              <span className="font-semibold">Prediction confidence</span>
+              <span className="font-semibold">Достоверность прогноза</span>
             </div>
-            <p className="mt-3 text-sm text-slate-400">Confidence remains above 80% for the most recent signal batch.</p>
+            <p className="mt-3 text-sm text-slate-400">Достоверность остается выше 80% для самых последних пакетов сигналов.</p>
           </div>
         </SectionCard>
       </div>

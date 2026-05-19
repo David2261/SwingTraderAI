@@ -28,9 +28,9 @@ export function PortfolioPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Портфель</h1>
         <p className="text-slate-400 mt-1">
-          Real-time positions, allocation, and risk analysis
+          Анализ позиций, распределения и рисков в режиме реального времени.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export function PortfolioPage() {
       <div className="grid gap-6 sm:grid-cols-3">
         <GlassCard>
           <div className="p-6">
-            <p className="text-sm text-slate-400">Total Equity</p>
+            <p className="text-sm text-slate-400">Общий капитал</p>
             <div className="mt-3 flex items-baseline justify-between">
               <p className="text-3xl font-bold text-white">
                 {summary ? formatCurrency(summary.total_value) : '—'}
@@ -62,13 +62,13 @@ export function PortfolioPage() {
 
         <GlassCard>
           <div className="p-6">
-            <p className="text-sm text-slate-400">Unrealized P&L</p>
+            <p className="text-sm text-slate-400">Нереализованный P&L</p>
             <div className="mt-3 flex items-baseline justify-between">
               <p className="text-3xl font-bold text-emerald-400">
                 {summary ? formatCurrency(summary.total_pnl) : '—'}
               </p>
               <p className="text-sm font-semibold text-emerald-300">
-                {summary?.win_rate ?? 0}% win rate
+                {summary?.win_rate ?? 0}% процент побед
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export function PortfolioPage() {
 
         <GlassCard>
           <div className="p-6">
-            <p className="text-sm text-slate-400">Open Positions</p>
+            <p className="text-sm text-slate-400">Открытые позиции</p>
             <div className="mt-3 flex items-baseline justify-between">
               <p className="text-3xl font-bold text-white">{positions.length}</p>
               <p className="text-sm font-semibold text-slate-400">Avg ~32% each</p>
@@ -90,14 +90,14 @@ export function PortfolioPage() {
         <GlassCard>
           <div className="p-6">
             <SectionHeader
-              title="Open Positions"
-              description={`${positions.length} active holdings`}
+              title="Открытые позиции"
+              description={`${positions.length} активных позиций`}
               action={<TrendingUp className="h-4 w-4 text-slate-400" />}
             />
 
             <div className="mt-6 space-y-4">
               {positions.length === 0 ? (
-                <p className="text-slate-400 py-8 text-center">No open positions yet</p>
+                <p className="text-slate-400 py-8 text-center">Нет открытых позиций</p>
               ) : (
                 positions.map((position) => {
                   const isGain = position.pnl >= 0
@@ -140,7 +140,7 @@ export function PortfolioPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-slate-500 text-xs">Current</p>
+                          <p className="text-slate-500 text-xs">Текущий</p>
                           <p className="font-semibold mt-1">
                             ${position.current_price.toFixed(2)}
                           </p>
@@ -155,7 +155,7 @@ export function PortfolioPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-slate-500">Return</p>
+                          <p className="text-xs text-slate-500">Возвращаться</p>
                           <p className={`font-bold text-base ${isGain ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {isGain ? '+' : ''}{position.pnl_percent.toFixed(2)}%
                           </p>
@@ -174,7 +174,7 @@ export function PortfolioPage() {
           {/* Allocation */}
           <GlassCard>
             <div className="p-6">
-              <SectionHeader title="Allocation" description="By position weight" />
+              <SectionHeader title="Распределение" description="По весу позиции" />
               <div className="mt-6 space-y-5">
                 {positions.map((position) => (
                   <div key={position.id}>
@@ -201,7 +201,7 @@ export function PortfolioPage() {
               <div className="mt-6 space-y-4">
                 {bestPosition && (
                   <div className="rounded-2xl bg-emerald-950/50 border border-emerald-900/50 p-4">
-                    <p className="text-xs text-emerald-400">Best Performer</p>
+                    <p className="text-xs text-emerald-400">Лучший performer</p>
                     <p className="text-lg font-semibold mt-1">{bestPosition.ticker.symbol}</p>
                     <p className="text-emerald-400">+{bestPosition.pnl_percent.toFixed(2)}%</p>
                   </div>
@@ -209,7 +209,7 @@ export function PortfolioPage() {
 
                 {worstPosition && (
                   <div className="rounded-2xl bg-rose-950/50 border border-rose-900/50 p-4">
-                    <p className="text-xs text-rose-400">Worst Performer</p>
+                    <p className="text-xs text-rose-400">Худший performer</p>
                     <p className="text-lg font-semibold mt-1">{worstPosition.ticker.symbol}</p>
                     <p className="text-rose-400">{worstPosition.pnl_percent.toFixed(2)}%</p>
                   </div>

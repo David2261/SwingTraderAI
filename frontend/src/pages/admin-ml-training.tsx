@@ -10,11 +10,11 @@ export function AdminMLTrainingPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Admin: ML Training"
-        description="Monitor AI model training jobs and compute usage."
+        title="Администратор: Обучение ML"
+        description="Мониторинг задач обучения моделей ИИ и использования вычислительных ресурсов."
       />
 
-      <SectionCard title="Training queue" description="Latest AI lab jobs and status." actions={<Cpu className="h-4 w-4 text-white" />}>
+      <SectionCard title="Очередь обучения" description="Последние задачи лаборатории ИИ и их статус." actions={<Cpu className="h-4 w-4 text-white" />}>
         <div className="space-y-4">
           {jobs.map((job) => (
             <div key={job.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -28,9 +28,9 @@ export function AdminMLTrainingPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Resource forecast" description="Expected compute and model deployment windows." actions={<Sparkles className="h-4 w-4 text-white" />}>
+      <SectionCard title="Прогноз ресурсов" description="Ожидаемые окна вычислительных ресурсов и развертывания моделей." actions={<Sparkles className="h-4 w-4 text-white" />}>
         <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5 text-slate-400">
-          <p className="text-sm">Training capacity is optimized for overnight batch windows. Schedule new model runs after market close to avoid latency spikes.</p>
+          <p className="text-sm">Вместимость обучения оптимизирована для ночных пакетных окон. Планируйте новые запуски моделей после закрытия рынка, чтобы избежать скачков задержки.</p>
         </div>
       </SectionCard>
     </div>

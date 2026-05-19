@@ -13,24 +13,24 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Admin: Users"
-        description="Manage team access and review platform permissions."
+        title="Администратор: Пользователи"
+        description="Управление доступом команды и проверка разрешений платформы."
       />
 
-      <SectionCard title="Team members" description="Active users and pending access approvals." actions={<Users className="h-4 w-4 text-white" />}>
+      <SectionCard title="Члены команды" description="Активные пользователи и пользователи, ожидающие подтверждения доступа." actions={<Users className="h-4 w-4 text-white" />}>
         <div className="grid gap-4">
           {adminUsers.map((user) => (
             <div key={user.id} className="grid gap-2 rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 sm:grid-cols-[1fr_0.8fr_0.8fr]">
               <div>
-                <p className="text-sm text-slate-400">Name</p>
+                <p className="text-sm text-slate-400">Имя</p>
                 <p className="mt-1 text-base font-semibold text-white">{user.name}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400">Role</p>
+                <p className="text-sm text-slate-400">Роль</p>
                 <p className="mt-1 text-base text-slate-200">{user.role}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400">Status</p>
+                <p className="text-sm text-slate-400">Статус</p>
                 <p className="mt-1 text-base text-white">{user.status}</p>
               </div>
             </div>
@@ -38,9 +38,9 @@ export function AdminUsersPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Security overview" description="Audit logs, role reviews, and access controls." actions={<ShieldCheck className="h-4 w-4 text-white" />}>
+      <SectionCard title="Обзор безопасности" description="Журналы аудита, проверки ролей и контроль доступа." actions={<ShieldCheck className="h-4 w-4 text-white" />}>
         <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5 text-slate-400">
-          <p className="text-sm">Review user login patterns weekly and ensure only approved roles have elevated access to live trading and model configuration.</p>
+          <p className="text-sm">Еженедельно проверяйте схемы входа пользователей в систему и убедитесь, что только утвержденные роли имеют расширенный доступ к торговле в режиме реального времени и настройке моделей.</p>
         </div>
       </SectionCard>
     </div>

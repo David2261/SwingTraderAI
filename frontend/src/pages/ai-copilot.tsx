@@ -60,10 +60,10 @@ export function AICopilotPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <Sparkles className="h-9 w-9 text-blue-400" />
-            AI Copilot Terminal
+            Терминал ИИ
           </h1>
           <p className="text-slate-400 mt-1">
-            Bloomberg Terminal × ChatGPT для трейдинга
+            AI терминал - ваш персональный помощник для анализа рынка, сигналов и управления портфелем. Просто задайте вопрос или выберите быстрый промпт, чтобы получить инсайты и рекомендации в реальном времени.
           </p>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function AICopilotPage() {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <Sparkles className="h-16 w-16 text-slate-600 mb-6" />
-              <p className="text-slate-400 text-lg">Начните разговор с AI Copilot</p>
+              <p className="text-slate-400 text-lg">Начните разговор с AI</p>
             </div>
           ) : (
             messages.map((msg) => (

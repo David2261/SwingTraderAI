@@ -18,9 +18,9 @@ export function DashboardPage() {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-blue-400" />
-              AI Market Briefing
+              AI Краткий обзор рынка
             </h2>
-            <p className="text-xs text-slate-400 mt-1">Real-time market regime analysis</p>
+            <p className="text-xs text-slate-400 mt-1">Анализ рынка в режиме реального времени</p>
           </div>
           <MarketStatusBadge status="bullish" />
         </div>
@@ -32,15 +32,15 @@ export function DashboardPage() {
 
           <div className="grid gap-3 sm:grid-cols-4">
             <div className="rounded-2xl bg-slate-800/50 p-3">
-              <p className="text-xs text-slate-400">Regime</p>
+              <p className="text-xs text-slate-400">Режим</p>
               <p className="text-sm font-semibold text-emerald-400 mt-1">{mockAiMarketBriefing.regime}</p>
             </div>
             <div className="rounded-2xl bg-slate-800/50 p-3">
-              <p className="text-xs text-slate-400">Volatility</p>
+              <p className="text-xs text-slate-400">Волатильность</p>
               <p className="text-sm font-semibold text-orange-400 mt-1">{mockAiMarketBriefing.volatility}</p>
             </div>
             <div className="rounded-2xl bg-slate-800/50 p-3">
-              <p className="text-xs text-slate-400">AI Confidence</p>
+              <p className="text-xs text-slate-400">AI Уверенность</p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="h-2 w-12 rounded-full bg-slate-700">
                   <div
@@ -52,13 +52,13 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="rounded-2xl bg-slate-800/50 p-3">
-              <p className="text-xs text-slate-400">Sentiment</p>
+              <p className="text-xs text-slate-400">Настроение</p>
               <p className="text-sm font-semibold text-emerald-400 mt-1">{mockAiMarketBriefing.sentiment}</p>
             </div>
           </div>
 
           <div className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-2">Strongest Setups</p>
+            <p className="text-xs text-slate-400 mb-2">Самые мощные конфигурации</p>
             <ul className="space-y-1">
               {mockAiMarketBriefing.strongest_setups.map((setup, i) => (
                 <li key={i} className="text-sm text-slate-300 flex items-center gap-2">
@@ -83,11 +83,11 @@ export function DashboardPage() {
         {/* Portfolio Summary */}
         <GlassCard>
           <div className="p-6 space-y-4">
-            <SectionHeader title="Portfolio" description="Real-time allocation snapshot" />
+            <SectionHeader title="Портфель" description="Снимок реального времени распределения" />
 
-            <MetricRow label="Total Value" value={`$${mockPortfolioSummary.total_value.toLocaleString()}`} trend="up" />
-            <MetricRow label="Day P&L" value={`${mockPortfolioSummary.day_change_percent > 0 ? '+' : ''}${mockPortfolioSummary.day_change_percent}%`} trend={mockPortfolioSummary.day_change_percent > 0 ? 'up' : 'down'} />
-            <MetricRow label="Total P&L" value={`$${mockPortfolioSummary.total_pnl.toLocaleString()}`} trend="up" secondary={`Win rate: ${mockPortfolioSummary.win_rate}%`} />
+            <MetricRow label="Общая стоимость" value={`$${mockPortfolioSummary.total_value.toLocaleString()}`} trend="up" />
+            <MetricRow label="Дневная P&L" value={`${mockPortfolioSummary.day_change_percent > 0 ? '+' : ''}${mockPortfolioSummary.day_change_percent}%`} trend={mockPortfolioSummary.day_change_percent > 0 ? 'up' : 'down'} />
+            <MetricRow label="Общая P&L" value={`$${mockPortfolioSummary.total_pnl.toLocaleString()}`} trend="up" secondary={`Коэффициент побед: ${mockPortfolioSummary.win_rate}%`} />
 
             <div className="pt-3 border-t border-slate-800/50">
               <div className="h-6 rounded-full bg-slate-800/50 overflow-hidden">
@@ -111,7 +111,7 @@ export function DashboardPage() {
         {/* AI Signals Feed */}
         <GlassCard>
           <div className="p-6 space-y-3">
-            <SectionHeader title="Latest Signals" description="AI-generated trading ideas" action={<TrendingUp className="h-4 w-4 text-slate-400" />} />
+            <SectionHeader title="Последние сигналы" description="AI-сгенерированные идеи для торговли" action={<TrendingUp className="h-4 w-4 text-slate-400" />} />
 
             {mockSignalsFeed.slice(0, 3).map((signal) => (
               <div key={signal.id} className="rounded-2xl bg-slate-800/50 p-3 flex items-center justify-between gap-3">
@@ -142,7 +142,7 @@ export function DashboardPage() {
         {/* Market Heatmap */}
         <GlassCard>
           <div className="p-6 space-y-4">
-            <SectionHeader title="Market Heatmap" description="Real-time performance grid" />
+            <SectionHeader title="Тепловая карта рынка" description="Сетка производительности в реальном времени" />
 
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -175,7 +175,7 @@ export function DashboardPage() {
         {/* AI Explainability */}
         <GlassCard>
           <div className="p-6 space-y-3">
-            <SectionHeader title="AI Explainability" description="Why signals were generated" action={<Sparkles className="h-4 w-4 text-blue-400" />} />
+            <SectionHeader title="AI Объясняемость" description="Почему были сгенерированы сигналы" action={<Sparkles className="h-4 w-4 text-blue-400" />} />
 
             {mockExplainability.map((exp) => (
               <div key={exp.id} className="rounded-2xl bg-slate-800/50 p-3 space-y-2">
@@ -199,7 +199,7 @@ export function DashboardPage() {
         {/* Active Alerts */}
         <GlassCard>
           <div className="p-6 space-y-3">
-            <SectionHeader title="Active Alerts" description="Real-time trading warnings" action={<AlertTriangle className="h-4 w-4 text-orange-400" />} />
+            <SectionHeader title="Активные оповещения" description="Оповещения о торговых сигналах" action={<AlertTriangle className="h-4 w-4 text-orange-400" />} />
 
             {mockAlerts.slice(0, 2).map((alert) => (
               <div key={alert.id} className={`rounded-2xl p-3 flex items-start gap-3 ${
@@ -224,7 +224,7 @@ export function DashboardPage() {
         {/* Recent Predictions */}
         <GlassCard>
           <div className="p-6 space-y-3">
-            <SectionHeader title="Recent Predictions" description="AI model forecasts" action={<Zap className="h-4 w-4 text-yellow-400" />} />
+            <SectionHeader title="Последние прогнозы" description="AI Прогнозы" action={<Zap className="h-4 w-4 text-yellow-400" />} />
 
             {mockPredictions.slice(0, 2).map((pred) => (
               <div key={pred.id} className="rounded-2xl bg-slate-800/50 p-3 space-y-2">
@@ -235,7 +235,7 @@ export function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Probability</span>
+                  <span className="text-xs text-slate-500">Вероятность</span>
                   <span className="text-sm font-semibold text-blue-400">{Math.round(pred.probability * 100)}%</span>
                 </div>
               </div>
@@ -247,14 +247,14 @@ export function DashboardPage() {
       {/* Quick Actions */}
       <GlassCard>
         <div className="p-6 space-y-4">
-          <SectionHeader title="Quick Actions" description="One-click trading commands" />
+          <SectionHeader title="Быстрые действия" description="Торговые команды в один клик" />
 
           <div className="grid gap-3 sm:grid-cols-4">
             {[
-              { label: 'View Setup', color: 'blue' },
-              { label: 'Place Order', color: 'emerald' },
-              { label: 'Risk Check', color: 'orange' },
-              { label: 'Backtest', color: 'purple' },
+              { label: 'Просмотр настроек', color: 'blue' },
+              { label: 'Разместить ордер', color: 'emerald' },
+              { label: 'Проверка рисков', color: 'orange' },
+              { label: 'Обратное тестирование', color: 'purple' },
             ].map((action) => (
               <button
                 key={action.label}

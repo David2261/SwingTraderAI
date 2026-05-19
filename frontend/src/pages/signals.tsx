@@ -26,7 +26,7 @@ export function SignalsPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <SectionCard title="Signal timeline" description="Review recent AI-generated signals and their market rationale.">
+        <SectionCard title="Хронология сигнала" description="Проанализируйте последние сигналы, сгенерированные искусственным интеллектом, и их рыночное обоснование.">
           <div className="space-y-4">
             {history.map((signal) => (
               <div key={signal.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 transition hover:border-slate-600">
@@ -39,7 +39,7 @@ export function SignalsPage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-3 text-slate-400">
                   <span>{signal.time}</span>
-                  <span>{(signal.confidence * 100).toFixed(0)}% confidence</span>
+                  <span>{(signal.confidence * 100).toFixed(0)}% уверенность</span>
                 </div>
                 <p className="mt-3 text-sm text-slate-500">{signal.note}</p>
               </div>
@@ -47,13 +47,13 @@ export function SignalsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Signal categories" description="Distribution by category and trend strength.">
+        <SectionCard title="Категории сигналов" description="Распределение по категориям и силе тренда.">
           <div className="space-y-4">
             {Object.entries(grouped).map(([category, items]) => (
               <div key={category} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
                 <div className="flex items-center justify-between gap-3 text-white">
                   <span>{category}</span>
-                  <span>{items.length} entries</span>
+                  <span>{items.length} записи</span>
                 </div>
                 <div className="mt-3 h-2 rounded-full bg-slate-800">
                   <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-400" style={{ width: `${Math.min(items.length * 20, 100)}%` }} />
@@ -63,9 +63,9 @@ export function SignalsPage() {
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
               <div className="flex items-center gap-3 text-slate-200">
                 <LineChart className="h-5 w-5 text-cyan-300" />
-                <span className="font-semibold">Confidence trend</span>
+                <span className="font-semibold">Тенденция уверенности</span>
               </div>
-              <p className="mt-3 text-sm text-slate-400">Signals are weighted by confidence and strategy consensus.</p>
+              <p className="mt-3 text-sm text-slate-400">Сигналы взвешиваются с учетом уровня уверенности и консенсуса в отношении стратегии.</p>
             </div>
           </div>
         </SectionCard>

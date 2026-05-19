@@ -11,10 +11,10 @@ export function SupportPage() {
     <div className="space-y-8">
       <PageHeader
         title="Support"
-        description="Manage support tickets, feature requests, and AI lab feedback."
+        description="Управление заявками в службу поддержки, запросами на добавление новых функций и отзывами о работе лаборатории ИИ."
       />
 
-      <SectionCard title="Support tickets" description="Current open requests and feature feedback." actions={<Headset className="h-4 w-4 text-white" />}>
+      <SectionCard title="Заявки в службу поддержки" description="Текущие открытые запросы и отзывы о новых функциях." actions={<Headset className="h-4 w-4 text-white" />}>
         <div className="space-y-4">
           {topics.map((topic) => (
             <div key={topic.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -22,15 +22,15 @@ export function SupportPage() {
                 <p className="font-semibold text-white">{topic.title}</p>
                 <span className="text-xs uppercase tracking-[0.18em] text-slate-400">{topic.status}</span>
               </div>
-              <p className="mt-2 text-sm text-slate-400">Support team is reviewing the request.</p>
+              <p className="mt-2 text-sm text-slate-400">Служба поддержки рассматривает запрос.</p>
             </div>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title="Help center" description="AI guidance and documentation for the trading terminal." actions={<MessageSquare className="h-4 w-4 text-white" />}>
+      <SectionCard title="Центр поддержки" description="Руководство и документация по использованию ИИ для торгового терминала." actions={<MessageSquare className="h-4 w-4 text-white" />}>
         <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5 text-slate-400">
-          <p className="text-sm">Use the AI Copilot or in-app messages to connect with our support team and collaborate on strategy workflows.</p>
+          <p className="text-sm">Используйте Email или сообщения в приложении, чтобы связаться с нашей службой поддержки и совместно работать над стратегическими процессами.</p>
         </div>
       </SectionCard>
     </div>

@@ -10,12 +10,12 @@ export function JournalPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Journal"
-        description="Capture trading notes, emotional insights, and AI coaching feedback."
+        title="Журнал"
+        description="Фиксируйте торговые заметки, эмоциональные моменты и отзывы об использовании искусственного интеллекта в качестве тренера."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <SectionCard title="Recent notes" description="Review the latest journal entries.">
+        <SectionCard title="Последние заметки" description="Просмотрите последние записи в журнале.">
           <div className="space-y-4">
             {entries.map((entry) => (
               <div key={entry.id} className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4">
@@ -32,15 +32,15 @@ export function JournalPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Journal coaching" description="AI insights to improve your decision process.">
+        <SectionCard title="Журнал тренинга" description="Инсайты ИИ для улучшения вашего процесса принятия решений.">
           <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-5">
             <div className="flex items-center gap-3 text-white">
               <HeartPulse className="h-5 w-5 text-rose-400" />
-              <span className="font-semibold">Trading mindset</span>
+              <span className="font-semibold">Менталитет трейдинга</span>
             </div>
-            <p className="mt-3 text-sm text-slate-400">Keep emotion in check by reviewing setups before execution and logging the thesis behind each trade.</p>
+            <p className="mt-3 text-sm text-slate-400">Держите эмоции под контролем, просматривая подготовленные ситуации перед выполнением и регистрируя теорию, стоящую за каждым сделкой.</p>
           </div>
-          <SectionCard title="Structure" description="Improve trade review cadence." />
+          <SectionCard title="Структура" description="Улучшите частоту обзора сделок." />
         </SectionCard>
       </div>
     </div>

@@ -9,7 +9,7 @@ export function MarketOverview() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Market overview</CardTitle>
+        <CardTitle>Обзор рынка</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
@@ -39,7 +39,7 @@ export function MarketOverview() {
             ))}
             <div className="flex items-center gap-2 rounded-2xl bg-primary/5 p-3 text-xs text-muted-foreground">
               <TrendingUp className="h-4 w-4 text-primary" />
-              Markets are updated every 10 seconds with live tickers and signals.
+              Рынки обновляются каждые 10 секунд с живыми тикерами и сигналами.
             </div>
           </div>
         )}
