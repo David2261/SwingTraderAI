@@ -10,7 +10,7 @@ from swingtraderai.api.services.user_service import UserService
 from swingtraderai.core.tenant import get_current_tenant_id
 from swingtraderai.db.models.user import User
 from swingtraderai.db.session import get_db
-from swingtraderai.schemas.auth import UserOut
+from swingtraderai.schemas.auth import UserOut, UserUpdate
 from swingtraderai.schemas.user import (
 	PortfolioSummary,
 	PositionCreate,
@@ -44,6 +44,23 @@ async def read_users_me(
 	"""
 	user = await user_service.get_user_with_stats(tenant_id, current_user.id)
 	return UserOut.model_validate(user)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_users_me(
+	user_update: UserUpdate,
+	current_user: User = Depends(get_current_user),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	user_service: UserService = Depends(get_user_service),
+) -> UserOut:
+	"""
+	Частичное обновление профиля текущего авторизованного пользователя.
+	Можно изменить username, timezone, telegram_id, telegram_username и avatar_url.
+	"""
+	updated_user_data = await user_service.update_user(
+		tenant_id=tenant_id, user_id=current_user.id, user_update=user_update
+	)
+	return UserOut.model_validate(updated_user_data)
 
 
 @router.get("/{user_id}", response_model=UserOut)

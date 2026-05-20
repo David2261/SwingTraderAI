@@ -27,6 +27,7 @@ export const userSchema = z.object({
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   created_at: z.string().optional(),
+  timezone: z.string().optional(),
 })
 
 export const profileSchema = z.object({
@@ -49,6 +50,14 @@ export const profileSchema = z.object({
   total_signals_received: z.number().int().nonnegative(),
 })
 
+export const profileUpdateRequestSchema = z.object({
+  username: z.string().min(3).max(50).optional(),
+  telegram_id: z.number().nullable().optional(),
+  telegram_username: z.string().nullable().optional(),
+  avatar_url: z.string().url().nullable().optional(),
+  timezone: z.string().optional(),
+})
+
 export const authTokenSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
@@ -68,4 +77,5 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>
 export type RegisterRequest = z.infer<typeof registerRequestSchema>
 export type AuthResponse = z.infer<typeof authResponseSchema>
 export type Profile = z.infer<typeof profileSchema>
+export type ProfileUpdateRequest = z.infer<typeof profileUpdateRequestSchema>
 export type User = z.infer<typeof userSchema>
