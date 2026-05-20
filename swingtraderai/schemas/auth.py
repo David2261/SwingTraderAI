@@ -20,8 +20,10 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
 	username: Optional[str] = Field(None, min_length=3, max_length=50)
 	email: Optional[EmailStr] = None
-	telegram_id: Optional[int] = Field(None)
-	password: Optional[str] = Field(None, min_length=8, max_length=128)
+	telegram_id: Optional[int] = None
+	telegram_username: Optional[str] = None
+	avatar_url: Optional[str] = None
+	timezone: Optional[str] = None
 
 	model_config = ConfigDict(extra="forbid")
 
@@ -31,13 +33,25 @@ class UserPasswordUpdate(BaseModel):
 	new_password: str = Field(..., min_length=8, max_length=128)
 
 
-class UserOut(UserBase):
+class UserOut(BaseModel):
 	id: UUID
+	username: str
+	email: EmailStr
 	role: UserRole
+	telegram_id: Optional[int] = None
+	telegram_username: Optional[str] = None
+	avatar_url: Optional[str] = None
 	is_active: bool
 	is_superuser: bool
 	created_at: datetime
 	last_login: Optional[datetime] = None
+	last_login_ip: Optional[str] = None
+	timezone: str = "Europe/Moscow"
+
+	watchlist_count: int = 0
+	positions_count: int = 0
+	active_alerts_count: int = 0
+	total_signals_received: int = 0
 
 	model_config = ConfigDict(from_attributes=True)
 

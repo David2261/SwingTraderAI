@@ -23,6 +23,9 @@ export function PortfolioPage() {
   const sortedByPnL = [...positions].sort((a, b) => b.pnl_percent - a.pnl_percent)
   const bestPosition = sortedByPnL[0]
   const worstPosition = sortedByPnL[sortedByPnL.length - 1]
+  const largestAllocation = positions.length > 0
+    ? Math.max(...positions.map((p) => Number(p.allocation_percent ?? 0)))
+    : 0
 
   return (
     <div className="space-y-6">
@@ -232,9 +235,7 @@ export function PortfolioPage() {
           <div className="grid gap-6 sm:grid-cols-3 mt-8">
             <div className="text-center">
               <p className="text-4xl font-bold text-orange-400">
-                {positions.length > 0
-                  ? Math.max(...positions.map((p) => p.allocation_percent ?? 0))
-                  : 0}%
+                {largestAllocation.toFixed(1)}%
               </p>
               <p className="text-sm text-slate-400 mt-2">Largest Position</p>
             </div>

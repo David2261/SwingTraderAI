@@ -42,7 +42,8 @@ async def read_users_me(
 	"""
 	Получение информации о текущем авторизованном пользователе.
 	"""
-	return UserOut.model_validate(current_user)
+	user = await user_service.get_user_with_stats(tenant_id, current_user.id)
+	return UserOut.model_validate(user)
 
 
 @router.get("/{user_id}", response_model=UserOut)

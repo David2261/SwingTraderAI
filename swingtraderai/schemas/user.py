@@ -26,7 +26,7 @@ class UserOutDetailed(UserOut):
 
 	last_login_ip: Optional[str] = None
 	watchlist: List[WatchlistItem] = Field(default_factory=list)
-	watchlist_count: Optional[int] = None
+	watchlist_count: int
 	updated_at: Optional[datetime] = None
 
 

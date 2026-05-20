@@ -17,14 +17,14 @@ import type {
   TickerDetail,
   TopMover,
   UpdatePositionRequest,
-  User,
   WatchlistItem,
 } from '@/shared/api/api-client-types'
 import {
   authResponseSchema,
   loginRequestSchema,
+  profileSchema,
   registerRequestSchema,
-  userSchema,
+  type Profile,
 } from '@/features/auth/schemas/api-schemas'
 import {
   candleSchema,
@@ -102,15 +102,27 @@ export const apiClient = {
         )
     },
 
+
     me: async () => {
         const response = await api.get('/users/me')
 
-        return parseResponse<User>(
-        userSchema,
+        return parseResponse<Profile>(
+        profileSchema,
         response.data
         )
     },
+  },
+  profile: {
+    get: async () => {
+      const response = await api.get('/users/me')
+      return parseResponse<Profile>(profileSchema, response.data)
     },
+
+    update: async (data: Partial<Profile>) => {
+      const response = await api.patch('/users/me', data)
+      return parseResponse<Profile>(profileSchema, response.data)
+    },
+  },
 
   tickers: {
     search: async (query: string) => {
