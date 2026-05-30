@@ -20,6 +20,7 @@ from swingtraderai.schemas.watchlist import (
 	WatchlistDataItem,
 	WatchlistItemCreate,
 	WatchlistItemUpdate,
+	WatchlistStats,
 )
 
 
@@ -412,3 +413,84 @@ class WatchlistService:
 			)
 
 		return items
+
+	async def get_watchlist_stats(
+		self,
+		tenant_id: UUID,
+		user_id: UUID,
+	) -> WatchlistStats:
+		items = await self.get_watchlist_with_prices(
+			tenant_id=tenant_id,
+			user_id=user_id,
+			limit=200,
+			include_ai=True,
+		)
+
+		if not items:
+			return WatchlistStats()
+
+		gainers = 0
+		losers = 0
+		neutral = 0
+
+		strong_buy_count = 0
+		buy_count = 0
+		sell_count = 0
+		strong_sell_count = 0
+
+		total_change = 0.0
+
+		top_gainer = None
+		top_loser = None
+
+		best_change = float("-inf")
+		worst_change = float("inf")
+
+		for item in items:
+			change = item.change_percent or 0.0
+			total_change += change
+
+			# movement
+			if change > 0:
+				gainers += 1
+			elif change < 0:
+				losers += 1
+			else:
+				neutral += 1
+
+			# top movers
+			if change > best_change:
+				best_change = change
+				top_gainer = item.symbol
+
+			if change < worst_change:
+				worst_change = change
+				top_loser = item.symbol
+
+			# signals
+			match item.signal:
+				case "STRONG_BUY":
+					strong_buy_count += 1
+				case "BUY":
+					buy_count += 1
+				case "SELL":
+					sell_count += 1
+				case "STRONG_SELL":
+					strong_sell_count += 1
+
+		return WatchlistStats(
+			total_assets=len(items),
+			gainers=gainers,
+			losers=losers,
+			neutral=neutral,
+			strong_buy_count=strong_buy_count,
+			buy_count=buy_count,
+			sell_count=sell_count,
+			strong_sell_count=strong_sell_count,
+			avg_change_percent=round(
+				total_change / len(items),
+				2,
+			),
+			top_gainer=top_gainer,
+			top_loser=top_loser,
+		)

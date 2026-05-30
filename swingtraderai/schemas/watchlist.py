@@ -173,3 +173,23 @@ class WatchlistDataItem(BaseModel):
 	trend: list[float] = Field(default_factory=list)
 
 	model_config = ConfigDict(from_attributes=True)
+
+
+class WatchlistStats(BaseModel):
+	total_assets: int = 0
+
+	gainers: int = 0
+	losers: int = 0
+	neutral: int = 0
+
+	strong_buy_count: int = 0
+	buy_count: int = 0
+	sell_count: int = 0
+	strong_sell_count: int = 0
+
+	avg_change_percent: float = 0.0
+
+	top_gainer: Optional[str] = None
+	top_loser: Optional[str] = None
+
+	model_config = ConfigDict(from_attributes=True)

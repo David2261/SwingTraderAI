@@ -14,6 +14,7 @@ from swingtraderai.schemas.watchlist import (
 	WatchlistItemCreate,
 	WatchlistItemOut,
 	WatchlistItemUpdate,
+	WatchlistStats,
 )
 
 router = APIRouter(prefix="/users/me/watchlist", tags=["watchlist"])
@@ -136,4 +137,27 @@ async def get_watchlist_with_prices(
 		order=order,
 		include_ai=include_ai,
 		include_trend=include_trend,
+	)
+
+
+@router.get(
+	"/stats",
+	response_model=WatchlistStats,
+)
+async def get_watchlist_stats(
+	current_user: User = Depends(get_current_user),
+	tenant_id: UUID = Depends(get_current_tenant_id),
+	watchlist_service: WatchlistService = Depends(get_watchlist_service),
+) -> WatchlistStats:
+	"""
+	Статистика watchlist:
+	- количество активов
+	- рост/падение
+	- сильные сигналы
+	- лучший/худший тикер
+	"""
+
+	return await watchlist_service.get_watchlist_stats(
+		tenant_id=tenant_id,
+		user_id=current_user.id,
 	)
