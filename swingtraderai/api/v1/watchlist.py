@@ -101,12 +101,22 @@ async def remove_from_watchlist(
 
 @router.get("/data", response_model=List[WatchlistDataItem])
 async def get_watchlist_with_prices(
-	limit: int = Query(50, ge=1, le=200, description="Максимум элементов"),
+	limit: int = Query(50, ge=1, le=200),
+	search: str | None = Query(
+		None,
+		description="Поиск по symbol и name",
+	),
+	asset_type: str = Query(
+		"all",
+		description="all | crypto | stock | russian | moex",
+	),
 	sort_by: str = Query(
 		"change_percent",
-		description="Сортировка: symbol, change_percent, volume, price",
+		description="signal | change_percent | price | symbol | added_at",
 	),
-	order: str = Query("desc", description="Порядок: asc / desc"),
+	order: str = Query("desc"),
+	include_ai: bool = Query(False),
+	include_trend: bool = Query(False),
 	current_user: User = Depends(get_current_user),
 	tenant_id: UUID = Depends(get_current_tenant_id),
 	watchlist_service: WatchlistService = Depends(get_watchlist_service),
@@ -120,6 +130,10 @@ async def get_watchlist_with_prices(
 		tenant_id=tenant_id,
 		user_id=current_user.id,
 		limit=limit,
+		search=search,
+		asset_type=asset_type,
 		sort_by=sort_by,
 		order=order,
+		include_ai=include_ai,
+		include_trend=include_trend,
 	)

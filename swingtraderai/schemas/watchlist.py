@@ -1,8 +1,49 @@
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from enum import Enum
+from typing import Final, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class SignalType(str, Enum):
+	TARGET_HIT = "target_hit"
+	STOP_LOSS_HIT = "stop_loss_hit"
+
+
+@dataclass(frozen=True)
+class AnalysisResult:
+	action: str
+	confidence: float
+	description: str
+
+
+class AnalysisConfig:
+	THRESHOLDS: Final = {
+		"strong_bullish": 5.0,
+		"bullish": 2.0,
+		"strong_bearish": -5.0,
+		"bearish": -2.0,
+	}
+
+	SCORES: Final = {
+		"strong_bullish": 2,
+		"bullish": 1,
+		"strong_bearish": -2,
+		"bearish": -1,
+		SignalType.TARGET_HIT: 2,
+		SignalType.STOP_LOSS_HIT: -2,
+	}
+
+	RESULT_MAPPING: Final = {
+		(3, float("inf")): ("STRONG_BUY", 0.91, "Strong bullish momentum detected"),
+		(1, 2): ("BUY", 0.77, "Positive momentum with upside potential"),
+		(float("-inf"), -3): ("STRONG_SELL", 0.89, "Strong downside pressure detected"),
+		(-2, -1): ("SELL", 0.74, "Negative momentum observed"),
+	}
+
+	NEUTRAL: Final = ("NEUTRAL", 0.63, "Price action remains neutral")
 
 
 class WatchlistBase(BaseModel):
@@ -90,20 +131,45 @@ class WatchlistItemUpdate(BaseModel):
 	model_config = ConfigDict(from_attributes=True)
 
 
+class AIInsight(BaseModel):
+	summary: str
+	confidence: float
+
+	model_config = ConfigDict(from_attributes=True)
+
+
 class WatchlistDataItem(BaseModel):
 	item_id: UUID
 	ticker_id: UUID
 	symbol: str
 	asset_type: str
-	last_price: Optional[float]
-	change_percent: Optional[float]
-	change_abs: Optional[float]
-	volume: Optional[float]
+
+	last_price: Optional[float] = None
+	change_percent: Optional[float] = 0.0
+	change_abs: Optional[float] = 0.0
+	volume: Optional[float] = None
 	added_at: datetime
+
 	notes: Optional[str] = None
 	reason: Optional[str] = None
 	target_price: Optional[float] = None
 	stop_loss: Optional[float] = None
-	signals: list[str] = []
+	signals: list[str] = Field(default_factory=list)
+
+	signal: Optional[
+		Literal[
+			"STRONG_BUY",
+			"BUY",
+			"NEUTRAL",
+			"SELL",
+			"STRONG_SELL",
+		]
+	] = None
+
+	confidence: float = 0.0
+	ai_summary: Optional[str] = None
+
+	ai_insight: Optional[AIInsight] = None
+	trend: list[float] = Field(default_factory=list)
 
 	model_config = ConfigDict(from_attributes=True)

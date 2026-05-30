@@ -40,10 +40,22 @@ class PortfolioAsset(BaseModel):
 	model_config = ConfigDict(from_attributes=True)
 
 
+class AssetAllocation(BaseModel):
+	asset_type: str
+	value: float
+	percent: float
+
+	model_config = ConfigDict(from_attributes=True)
+
+
 class PortfolioSummary(BaseModel):
 	total_value: float
 	total_change_percent: float
 	total_change_abs: float
+	total_pnl: float = 0.0
+	win_rate: float = 0.0
+	positions_count: int = 0
+	asset_allocation: List[AssetAllocation] = Field(default_factory=list)
 	assets: List[PortfolioAsset]
 
 	model_config = ConfigDict(from_attributes=True)

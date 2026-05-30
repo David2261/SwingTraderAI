@@ -2,7 +2,7 @@ from typing import Any, List
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swingtraderai.api.repositories.watchlist_repository import (
@@ -12,6 +12,10 @@ from swingtraderai.api.repositories.watchlist_repository import (
 from swingtraderai.db.models.market import MarketData, Ticker
 from swingtraderai.db.models.system import Watchlist, WatchlistItem
 from swingtraderai.schemas.watchlist import (
+	AIInsight,
+	AnalysisConfig,
+	AnalysisResult,
+	SignalType,
 	WatchlistCreate,
 	WatchlistDataItem,
 	WatchlistItemCreate,
@@ -26,6 +30,41 @@ class WatchlistService:
 		self.session = session
 		self.item_repo = WatchlistItemRepository(session)
 		self.watchlist_repo = WatchlistRepository(session)
+
+	def _calculate_score(self, change_pct: float, signals: list[str]) -> int:
+		"""Рассчитывает общий score."""
+		score = 0
+
+		if change_pct > AnalysisConfig.THRESHOLDS["strong_bullish"]:
+			score += AnalysisConfig.SCORES["strong_bullish"]
+		elif change_pct > AnalysisConfig.THRESHOLDS["bullish"]:
+			score += AnalysisConfig.SCORES["bullish"]
+		elif change_pct < AnalysisConfig.THRESHOLDS["strong_bearish"]:
+			score += AnalysisConfig.SCORES["strong_bearish"]
+		elif change_pct < AnalysisConfig.THRESHOLDS["bearish"]:
+			score += AnalysisConfig.SCORES["bearish"]
+
+		for signal in signals:
+			if signal in (SignalType.TARGET_HIT, SignalType.STOP_LOSS_HIT):
+				score += AnalysisConfig.SCORES[signal]
+
+		return score
+
+	def _get_result_by_score(self, score: int) -> AnalysisResult:
+		"""Возвращает результат на основе score."""
+		for (min_score, max_score), result in AnalysisConfig.RESULT_MAPPING.items():
+			if min_score <= score <= max_score:
+				return AnalysisResult(*result)
+
+		return AnalysisResult(*AnalysisConfig.NEUTRAL)
+
+	def generate_signal_analysis(
+		self,
+		change_pct: float,
+		signals: List[str],
+	) -> AnalysisResult:
+		score = self._calculate_score(change_pct, signals)
+		return self._get_result_by_score(score)
 
 	def check_signal(self, item: WatchlistItem, price: float) -> list[str]:
 		signals = []
@@ -169,32 +208,55 @@ class WatchlistService:
 		tenant_id: UUID,
 		user_id: UUID,
 		limit: int = 50,
+		search: str | None = None,
+		asset_type: str = "all",
 		sort_by: str = "change_percent",
 		order: str = "desc",
+		include_ai: bool = False,
+		include_trend: bool = False,
 	) -> List[WatchlistDataItem]:
 		"""
 		Возвращает watchlist с актуальными ценами и изменениями.
 		"""
-		# Subquery для последних двух цен
-		subq = (
+
+		# последние цены + prev_price
+		price_subq = (
 			select(
 				MarketData.ticker_id,
 				MarketData.close.label("last_price"),
 				MarketData.volume.label("last_volume"),
 				MarketData.timestamp,
 				func.lag(MarketData.close)
-				.over(partition_by=MarketData.ticker_id, order_by=MarketData.timestamp)
+				.over(
+					partition_by=MarketData.ticker_id,
+					order_by=MarketData.timestamp,
+				)
 				.label("prev_price"),
-			).order_by(MarketData.ticker_id, MarketData.timestamp.desc())
+			)
 		).subquery()
 
 		last_prices = (
-			select(subq)
-			.distinct(subq.c.ticker_id)
-			.order_by(subq.c.ticker_id, subq.c.timestamp.desc())
+			select(price_subq)
+			.distinct(price_subq.c.ticker_id)
+			.order_by(
+				price_subq.c.ticker_id,
+				price_subq.c.timestamp.desc(),
+			)
 		).subquery()
 
-		# Основной запрос
+		# trend (последние цены)
+		trend_subq = (
+			select(
+				MarketData.ticker_id,
+				func.array_agg(MarketData.close)
+				.over(
+					partition_by=MarketData.ticker_id,
+					order_by=MarketData.timestamp.desc(),
+				)
+				.label("trend"),
+			)
+		).subquery()
+
 		stmt = (
 			select(
 				WatchlistItem,
@@ -203,43 +265,130 @@ class WatchlistService:
 				last_prices.c.last_price,
 				last_prices.c.last_volume,
 				last_prices.c.prev_price,
+				trend_subq.c.trend,
 			)
-			.join(Watchlist, WatchlistItem.watchlist_id == Watchlist.id)
-			.join(Ticker, WatchlistItem.ticker_id == Ticker.id)
-			.join(last_prices, last_prices.c.ticker_id == Ticker.id)
-			.where(Watchlist.owner_id == user_id)
+			.join(
+				Watchlist,
+				WatchlistItem.watchlist_id == Watchlist.id,
+			)
+			.join(
+				Ticker,
+				WatchlistItem.ticker_id == Ticker.id,
+			)
+			.join(
+				last_prices,
+				last_prices.c.ticker_id == Ticker.id,
+			)
+			.outerjoin(
+				trend_subq,
+				trend_subq.c.ticker_id == Ticker.id,
+			)
+			.where(
+				Watchlist.owner_id == user_id,
+				Watchlist.tenant_id == tenant_id,
+			)
+		)
+
+		# search
+		if search:
+			search_term = f"%{search.lower()}%"
+
+			stmt = stmt.where(
+				or_(
+					func.lower(Ticker.symbol).like(search_term),
+				)
+			)
+
+		# asset_type
+		if asset_type != "all":
+			if asset_type in ("russian", "moex"):
+				stmt = stmt.where(Ticker.asset_type == "russian")
+			else:
+				stmt = stmt.where(Ticker.asset_type == asset_type)
+
+		# signal score
+		signal_score = case(
+			(
+				and_(
+					WatchlistItem.target_price.is_not(None),
+					last_prices.c.last_price <= WatchlistItem.target_price,
+				),
+				1,
+			),
+			else_=0,
 		)
 
 		sort_field: Any
 
-		# Сортировка
+		# sorting
 		if sort_by == "price":
 			sort_field = last_prices.c.last_price
-		elif sort_by == "volume":
-			sort_field = last_prices.c.last_volume
+
 		elif sort_by == "change_percent":
 			sort_field = (
 				last_prices.c.last_price - last_prices.c.prev_price
-			) / func.nullif(last_prices.c.prev_price, 0)
-		else:
+			) / func.nullif(
+				last_prices.c.prev_price,
+				0,
+			)
+
+		elif sort_by == "symbol":
 			sort_field = Ticker.symbol
 
-		if order.lower() == "asc":
-			stmt = stmt.order_by(sort_field.asc())
+		elif sort_by == "added_at":
+			sort_field = WatchlistItem.created_at
+
+		elif sort_by == "signal":
+			sort_field = signal_score
+
 		else:
-			stmt = stmt.order_by(sort_field.desc())
+			sort_field = last_prices.c.last_price
+
+		stmt = (
+			stmt.order_by(sort_field.asc())
+			if order == "asc"
+			else stmt.order_by(sort_field.desc())
+		)
 
 		result = await self.session.execute(stmt.limit(limit))
 		rows = result.all()
 
 		items = []
+
 		for row in rows:
-			wi, symbol, a_type, lp, lv, pp = row
+			(
+				wi,
+				symbol,
+				a_type,
+				lp,
+				lv,
+				pp,
+				trend,
+			) = row
 
 			change_abs = float(lp - pp) if lp and pp else 0.0
+
 			change_pct = float((lp - pp) / pp * 100) if lp and pp and pp != 0 else 0.0
 
-			signals = self.check_signal(wi, float(lp) if lp else 0)
+			signals = self.check_signal(
+				wi,
+				float(lp) if lp else 0,
+			)
+
+			trend_data = []
+
+			if include_trend and trend:
+				trend_data = [float(x) for x in trend[:7] if x is not None]
+
+			ai_insight = None
+
+			if include_ai:
+				ai_insight = AIInsight(
+					summary=(
+						"Momentum positive" if change_pct > 0 else "Weak momentum"
+					),
+					confidence=0.78,
+				)
 
 			items.append(
 				WatchlistDataItem(
@@ -257,6 +406,8 @@ class WatchlistService:
 					target_price=wi.target_price,
 					stop_loss=wi.stop_loss,
 					signals=signals,
+					ai_insight=ai_insight,
+					trend=trend_data,
 				)
 			)
 
